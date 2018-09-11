@@ -1,0 +1,11 @@
+{% macro render_form_field_no_border(field) %}
+    {{ field(class="form-control input-no-border") }}
+{% endmacro %}
+
+{% macro render_form_field_w_border(field) %}
+    {{ field(class="form-control border-input", **kwargs) }}
+{% endmacro %}
+
+{% macro render_form_datepicker_field_w_border(field, arguments) %}
+    {{ field(class="form-control border-input datepicker") }}
+{% endmacro %}
