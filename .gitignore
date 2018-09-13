@@ -120,3 +120,7 @@ pip-selfcheck.json
 
 #Pycharm IDE Settings
 .idea/
+/migrations/script.py.mako
+/migrations/env.py
+/migrations/README
+/migrations/alembic.ini

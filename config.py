@@ -13,7 +13,7 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    UNKANI_ADMIN = os.environ.get('UNKANI_ADMIN_EMAIL') or 'unkani_app.unkani@gmail.com'
+    UNKANI_ADMIN = os.environ.get('UNKANI_ADMIN_EMAIL') or 'app.unkani@gmail.com'
     UNKANI_ADMIN_EMAIL = os.environ.get('UNKANI_ADMIN_EMAIL')
     UNKANI_ADMIN_PASSWORD = os.environ.get('UNKANI_ADMIN_PASSWORD')
 
