@@ -25,7 +25,7 @@ def patient_read(patientid):
     pt = Patient.query.get_or_404(ident=patientid)
     data = pt.dump_fhir_json()
     response = jsonify(data)
-    response.headers['Location'] = url_for('api_v1.patient_read', id=pt.id)
+    response.headers['Location'] = url_for('api_v1.patient_read', patientid=pt.id)
     response.headers['Content-Type'] = 'application/fhir+json'
     response.status_code = 200
     return response

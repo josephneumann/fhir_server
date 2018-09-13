@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID as postgresql_uuid
 from sqlalchemy import inspect
 from marshmallow import fields, post_load
 from app.utils.demographics import *
-from flask import url_for, render_template
+from flask import url_for, render_template, has_request_context
 from app.utils.general import json_serial
 from app.models.fhir.address import Address, AddressSchema
 from app.models.fhir.email_address import EmailAddress, EmailAddressSchema
@@ -287,7 +287,10 @@ class Patient(db.Model):
         :return:
             Returns the absolute URL of the Patient resource in the Patient api.
         """
-        return url_for('api_v1.patient_read', id=self.id, _external=True)
+        if has_request_context():
+            return url_for('api_v1.patient_read', patientid=self.id, _external=True)
+        else:
+            return None
 
     ############################################
     # VERSIONING UTILITY PROPERTIES AND METHODS

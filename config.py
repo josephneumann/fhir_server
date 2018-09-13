@@ -76,6 +76,8 @@ class DevelopmentConfig(Config):
     SENTRY_DISABLE = True
     USE_RATE_LIMITS = True
     WTF_CSRF_ENABLED = False
+    EXPLAIN_TEMPLATE_LOADING = True
+    # SERVER_NAME = 'localhost:5000'
 
 
 class TestingConfig(Config):
