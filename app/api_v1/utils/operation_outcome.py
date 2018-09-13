@@ -26,8 +26,8 @@ def create_operation_outcome(outcome_list):
     narrative.div = render_template('fhir/operation_outcome.html', outcome_list=outcome_list)
     oo.text = narrative
 
-    # severity_codes = ValueSet.query.filter(ValueSet.resource_id == 'issue-severity').first().code_set
-    # type_codes = ValueSet.query.filter(ValueSet.resource_id == 'issue-type').first().code_set
+    severity_codes = ValueSet.query.filter(ValueSet.resource_id == 'issue-severity').first()
+    type_codes = ValueSet.query.filter(ValueSet.resource_id == 'issue-type').first()
 
     for x in outcome_list:
         issue_severity = None
@@ -38,13 +38,13 @@ def create_operation_outcome(outcome_list):
         issue_details = None
         if 'severity' in x.keys():
             issue_severity = x.get('severity').lower().strip()
-            # if issue_severity not in severity_codes:
-            #     issue_severity = None
+            if severity_codes and issue_severity not in severity_codes:
+                issue_severity = None
 
         if 'type' in x.keys():
             issue_type = x.get('type').lower().strip()
-            # if issue_type not in type_codes:
-            #     issue_type = None
+            if type_codes and issue_type not in type_codes:
+                issue_type = None
 
         if 'details' in x.keys():
             details = x.get('details')
