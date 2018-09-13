@@ -14,7 +14,7 @@ def fhir_error_response(status_code, outcome_list):
     return response
 
 
-@api_bp.errorhandler(AuthenticationError)
+@api_bp.app_errorhandler(AuthenticationError)
 def authentication_error_handler(e):
     response = fhir_error_response(status_code=401, outcome_list=[
         {'severity': 'error', 'type': 'security', 'location': [url_for('api_v1.new_token', _external=True)],
@@ -24,7 +24,7 @@ def authentication_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(BasicAuthError)
+@api_bp.app_errorhandler(BasicAuthError)
 def basic_auth_error_handler(e):
     response = fhir_error_response(status_code=401, outcome_list=[
         {'severity': 'error', 'type': 'login', 'location': [url_for('api_v1.new_token', _external=True)],
@@ -34,7 +34,7 @@ def basic_auth_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(TokenAuthError)
+@api_bp.app_errorhandler(TokenAuthError)
 def token_auth_error_handler(e):
     response = fhir_error_response(status_code=401, outcome_list=[
         {'severity': 'error', 'type': 'login', 'location': [url_for('api_v1.new_token', _external=True)],
@@ -44,7 +44,7 @@ def token_auth_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(TokenExpiredError)
+@api_bp.app_errorhandler(TokenExpiredError)
 def token_expired_error_handler(e):
     response = fhir_error_response(status_code=401, outcome_list=[
         {'severity': 'error', 'type': 'expired', 'location': [url_for('api_v1.new_token', _external=True)],
@@ -54,7 +54,7 @@ def token_expired_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(RateLimitError)
+@api_bp.app_errorhandler(RateLimitError)
 def too_many_requests(e):
     response = fhir_error_response(status_code=429, outcome_list=[
         {'severity': 'error', 'type': 'throttled',
@@ -64,7 +64,7 @@ def too_many_requests(e):
     return response
 
 
-@api_bp.errorhandler(400)
+@api_bp.app_errorhandler(400)
 def bad_request_handler(e):
     response = fhir_error_response(status_code=400, outcome_list=[
         {'severity': 'error', 'type': 'invalid',
@@ -72,7 +72,7 @@ def bad_request_handler(e):
     return response
 
 
-@api_bp.errorhandler(BadRequestError)
+@api_bp.app_errorhandler(BadRequestError)
 def bad_request_error_handler(e):
     response = fhir_error_response(status_code=400, outcome_list=[
         {'severity': 'error', 'type': 'invalid',
@@ -80,7 +80,7 @@ def bad_request_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(403)
+@api_bp.app_errorhandler(403)
 def forbidden_handler(e):
     response = fhir_error_response(status_code=403, outcome_list=[
         {'severity': 'error', 'type': 'forbidden',
@@ -88,7 +88,7 @@ def forbidden_handler(e):
     return response
 
 
-@api_bp.errorhandler(ForbiddenError)
+@api_bp.app_errorhandler(ForbiddenError)
 def forbidden_error_handler(e):
     response = fhir_error_response(status_code=403, outcome_list=[
         {'severity': 'error', 'type': 'forbidden',
@@ -96,7 +96,7 @@ def forbidden_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(404)
+@api_bp.app_errorhandler(404)
 def not_found_handler(e):
     response = fhir_error_response(status_code=404, outcome_list=[
         {'severity': 'fatal', 'type': 'not-found',
@@ -104,7 +104,7 @@ def not_found_handler(e):
     return response
 
 
-@api_bp.errorhandler(405)
+@api_bp.app_errorhandler(405)
 def method_not_allowed_handler(e):
     response = fhir_error_response(status_code=405, outcome_list=[
         {'severity': 'fatal', 'type': 'not-found',
@@ -112,7 +112,7 @@ def method_not_allowed_handler(e):
     return response
 
 
-@api_bp.errorhandler(500)
+@api_bp.app_errorhandler(500)
 def internal_server_error_handler(e):
     response = fhir_error_response(status_code=500, outcome_list=[
         {'severity': 'fatal', 'type': 'exception',
@@ -120,7 +120,7 @@ def internal_server_error_handler(e):
     return response
 
 
-@api_bp.errorhandler(NotModifiedError)
+@api_bp.app_errorhandler(NotModifiedError)
 def not_modified_handler(e):
     response = fhir_error_response(status_code=304, outcome_list=[
         {'severity': 'error', 'type': 'business-rule',
@@ -128,7 +128,7 @@ def not_modified_handler(e):
     return response
 
 
-@api_bp.errorhandler(PreconditionFailedError)
+@api_bp.app_errorhandler(PreconditionFailedError)
 def not_modified_handler(e):
     response = fhir_error_response(status_code=412, outcome_list=[
         {'severity': 'error', 'type': 'business-rule',
@@ -136,7 +136,7 @@ def not_modified_handler(e):
     return response
 
 
-@api_bp.errorhandler(ValidationError)
+@api_bp.app_errorhandler(ValidationError)
 def not_modified_handler(e):
     try:
         error_text = str(e.args[0])

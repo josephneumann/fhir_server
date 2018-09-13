@@ -6,4 +6,4 @@ app = create_app()
 
 # Enable old style app.run() method for Flask to allow pass-through of errors to Pycharm debugger
 if __name__ == '__main__':
-    app.run(debug=True, use_debugger=False, use_reloader=True, passthrough_errors=True)
+    app.run(debug=True, use_debugger=False, use_reloader=True, passthrough_errors=True, threaded=False)
