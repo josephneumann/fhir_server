@@ -338,7 +338,7 @@ class AddressAPI:
                 sa.session.add(updated_address)
 
     An Address resource is not typically operated upon directly by a REST API.  Instead, the AddressAPI class is
-    used in conjuction with person or non-person resources associated with the address.  The address is manipulated
+    used in conjuction with person or non-person views associated with the address.  The address is manipulated
     via that object instead
 
     """

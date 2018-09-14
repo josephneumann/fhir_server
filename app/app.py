@@ -83,4 +83,5 @@ def register_commands(app):
     app.cli.add_command(commands.drop_all)
     app.cli.add_command(commands.gunicorn)
     app.cli.add_command(commands.patients)
+    app.cli.add_command(commands.synthea)
     return None

@@ -7,11 +7,11 @@ from app.api_v1.utils.etag import etag
 @etag
 def index():
     response = jsonify(
-        {'resources': {'fhir': {'CodeSystem': url_for('api_v1.get_codesystems',
+        {'resources': {'FHIR-STU3': {'CodeSystem': url_for('api_v1.get_codesystems',
                                                       _external=True),
                                 'ValueSet': url_for('api_v1.get_valuesets', _external=True),
                                 'Patient': url_for('api_v1.patient_search', _external=True)},
-                       'unkani': {'User': url_for('api_v1.get_users', _external=True)}},
+                       'custom': {'User': url_for('api_v1.get_users', _external=True)}},
          'authentication': url_for('api_v1.new_token', _external=True)
          }
     )

@@ -3,6 +3,7 @@ from flask import current_app
 from flask.cli import with_appcontext
 from app.extensions import db
 from app.utils.demographics import random_demographics
+from app.utils.synthea import run_synthea
 from app.models.fhir.codesets import process_fhir_codeset, get_fhir_codeset
 from app.models.user import User
 from app.models.role import Role
@@ -146,3 +147,10 @@ def patients():
         t2 = time.clock()
         print("{} total patients created in {} seconds".format(patient_create_number, str(round(t2 - t1, 3))))
         print("Patient create time was {} seconds".format(round((t2 - t1) / patient_create_number, 3)))
+
+
+@click.command()
+@click.option('--population', '-p', default=100, type=int)
+def synthea(population):
+    """Create synthetic patient records using Synthea"""
+    run_synthea(total_population=population)

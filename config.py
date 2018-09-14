@@ -77,6 +77,7 @@ class DevelopmentConfig(Config):
     USE_RATE_LIMITS = True
     WTF_CSRF_ENABLED = False
     EXPLAIN_TEMPLATE_LOADING = True
+    SYNTHEA_SCRIPT_LOCATION = '/Users/jneumann/Code/synthea'
     # SERVER_NAME = 'localhost:5000'
 
 
