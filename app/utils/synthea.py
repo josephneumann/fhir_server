@@ -7,20 +7,7 @@ config_object = config[os.getenv('FLASK_CONFIG') or 'default']
 
 # Tuple (State, City, Population Weight)
 # None for City will use state-wide random cities
-synthea_geography = [
-    ('Wisconsin', 'Madison', 200)
-    , ('Wisconsin', 'Milwaukee', 100)
-    , ('Wisconsin', 'Appleton', 100)
-    , ('Wisconsin', 'Green Bay', 100)
-    , ('Wisconsin', 'Racine', 100)
-    , ('Wisconsin', 'Kenosha', 100)
-    , ('Wisconsin', None, 100)  # This will use random cities in Wisconsin
-    , ('Wisconsin', 'Fitchburg', 25)
-    , ('Wisconsin', 'Sun Prairie', 20)
-    , ('Wisconsin', 'Middleton', 15)
-    , ('Wisconsin', 'Waunakee', 9)
-    , ('Wisconsin', 'Verona', 7)
-]
+
 
 
 def get_total_weight(synthea_settings):
@@ -31,9 +18,11 @@ def get_total_weight(synthea_settings):
     return total_weight
 
 
-def run_synthea(total_population, synthea_path=None, synthea_settings=synthea_geography):
+def run_synthea(total_population, synthea_path=None, synthea_settings=None):
     if not synthea_path:
         synthea_path = config_object.SYNTHEA_SCRIPT_LOCATION
+    if not synthea_settings:
+        synthea_settings = config_object.SYNTHEA_GEOGRAPHY
     total_weight = get_total_weight(synthea_settings)
     for x in synthea_settings:
         state, city, weight = x

@@ -78,8 +78,20 @@ class DevelopmentConfig(Config):
     WTF_CSRF_ENABLED = False
     EXPLAIN_TEMPLATE_LOADING = True
     SYNTHEA_SCRIPT_LOCATION = '/Users/jneumann/Code/synthea'
-    # SERVER_NAME = 'localhost:5000'
-
+    SYNTHEA_GEOGRAPHY = [
+        ('Wisconsin', 'Madison', 200)
+        , ('Wisconsin', 'Milwaukee', 100)
+        , ('Wisconsin', 'Appleton', 100)
+        , ('Wisconsin', 'Green Bay', 100)
+        , ('Wisconsin', 'Racine', 100)
+        , ('Wisconsin', 'Kenosha', 100)
+        , ('Wisconsin', None, 100)  # This will use random cities in Wisconsin
+        , ('Wisconsin', 'Fitchburg', 25)
+        , ('Wisconsin', 'Sun Prairie', 20)
+        , ('Wisconsin', 'Middleton', 15)
+        , ('Wisconsin', 'Waunakee', 9)
+        , ('Wisconsin', 'Verona', 7)
+    ]
 
 class TestingConfig(Config):
     FLASK_DEBUG = True
