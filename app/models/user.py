@@ -1,5 +1,5 @@
 import os, hashlib, json, base64
-from flask import current_app, g, url_for
+from flask import current_app, g, url_for, has_request_context
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin, AnonymousUserMixin
 from marshmallow import fields, ValidationError
@@ -28,12 +28,7 @@ from sqlalchemy_continuum import version_class
 ##################################################################################################
 
 class User(UserMixin, db.Model):
-    # UserMixin from flask_login
-    # is_authenticated() - Returns True if user has login credentials, else False
-    # is_active() - Returns True if useris allowed to login, else False.
-    # is_anonymous() - Returns False for logged in users
-    # get_id() - Returns unique identifier for user, as Unicode string
-
+    """Flask-SQLAlchemy model for User object"""
     ##################################
     # MODEL ATTRIBUTES AND PROPERTIES
     ##################################
@@ -93,8 +88,7 @@ class User(UserMixin, db.Model):
             self.role = role
 
     def __repr__(self):  # pragma: no cover
-        __doc__ = """
-        Represents User model instance as a string"""
+        """Represents User model instance as a string"""
         return '<User {}:{}>'.format(self.id, self.username)
 
     ############################################
@@ -103,7 +97,8 @@ class User(UserMixin, db.Model):
 
     @hybrid_property
     def email(self):
-        """Returns the primary email for the account.
+        """
+        Returns the primary email for the account.
         Users may only have one Active and Primary email per account
         All other emails (old emails) must be inactive and non primary
         """
@@ -116,7 +111,8 @@ class User(UserMixin, db.Model):
 
     @property
     def phone_number(self):
-        """Returns the primary phone number for the account.
+        """
+        Returns the primary phone number for the account.
         Users may only have one Active and Primary phone number per account
         All other phone numbers (old) must be inactive and non primary
         """
@@ -129,7 +125,8 @@ class User(UserMixin, db.Model):
 
     @property
     def address(self):
-        """Returns the primary address for the account.
+        """
+        Returns the primary address for the account.
         Users may only have one Active and Primary address per account
         All other addresses (old) must be inactive and non primary
         """
@@ -149,24 +146,28 @@ class User(UserMixin, db.Model):
         :return:
             Returns the absolute URL of the User resource in the User api.
         """
-        return url_for('api_v1.get_user', userid=self.id, _external=True)
+        if has_request_context():
+            return url_for('api_v1.get_user', userid=self.id, _external=True)
+        return None
 
     ####################################
     # PASSWORD HASHING AND VERIFICATION
     ####################################
     @property
     def password(self):
-        __doc__ = """
+        """
         Defines a property 'password'
-        Raises an AttributeError if password property read is attempted"""
+        Raises an AttributeError if password property read is attempted
+        """
         raise AttributeError('Password is not a readable attribute')
 
     @password.setter
     def password(self, password):
-        __doc__ = """
+        """
         Defines setter method for property 'password'.  The string passed as the password
         parameter is converted to salted hash and stored in database.  The former password hash
-        is archived in the 'last_password_hash' attribute."""
+        is archived in the 'last_password_hash' attribute.
+        """
         if password:
             pw_hash = unkani_password_hasher(password=password)
             if self.password_hash:
@@ -179,32 +180,34 @@ class User(UserMixin, db.Model):
                 self.password_timestamp = datetime.utcnow()
 
     def verify_password(self, password):
-        __doc__ = """
-        Compare inputted password hash with user's hashed password."""
+        """
+        Compare inputted password hash with user's hashed password.
+        """
         if self.password_hash and password:
             return check_password_hash(self.password_hash, password)
         else:
             return False
 
     def verify_last_password(self, password):
-        __doc__ = """
-        Compare inputted password hash with user's last hashed password."""
+        """Compare inputted password hash with user's last hashed password."""
         if self.last_password_hash and password:
             return check_password_hash(self.last_password_hash, password)
         else:
             return False
 
     def generate_confirmation_token(self, expiration=3600):
-        __doc__ = """
+        """
         Generates a Timed JSON Web Signature encoding the user's id using the application
-        SECRET KEY.  Also encodes a key-value pair for account confirmation."""
+        SECRET KEY.  Also encodes a key-value pair for account confirmation.
+        """
         s = TimedSerializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id})
 
     def confirm(self, token):
-        __doc__ = """
+        """
         Loads Timed JSON web signature. Decodes using application Secret Key.  If user
-        that is encrypted in the token is un-confirmed, sets user.confirmed boolean to True"""
+        that is encrypted in the token is un-confirmed, sets user.confirmed boolean to True
+        """
         # TODO: Move confirmation boolean and process to email_address record instead of user
         s = TimedSerializer(current_app.config['SECRET_KEY'])
         try:
@@ -218,17 +221,19 @@ class User(UserMixin, db.Model):
         return True
 
     def generate_reset_token(self, expiration=3600):
-        __doc__ = """
+        """
         Generates a Timed JSON Web Signature encoding the user's id using the application
-        SECRET KEY.  Also encodes a key-value pair for account password reset."""
+        SECRET KEY.  Also encodes a key-value pair for account password reset.
+        """
         s = TimedSerializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'reset': self.id})
 
     def reset_password(self, token, new_password):
-        __doc__ = """
+        """
         Decode and validate a Time JSON Web Signature supplied as the 'Token' variable. Ensure
         that the id encoded in the token matches the expected user.  Update the user password attribute
-        with the password supplied in the parameter 'new_password'."""
+        with the password supplied in the parameter 'new_password'.
+        """
         s = TimedSerializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -241,18 +246,20 @@ class User(UserMixin, db.Model):
         return True
 
     def generate_email_change_token(self, new_email, expiration=3600):
-        __doc__ = """
+        """
         Generates a Timed JSON Web Signature encoding the user's id using the application
-        SECRET KEY.  Also encodes a key-value pair for email change and validation."""
+        SECRET KEY.  Also encodes a key-value pair for email change and validation.
+        """
         s = TimedSerializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'change_email': self.id, 'new_email': new_email})
 
     def process_change_email_token(self, token):
-        __doc__ = """
+        """
         Decode and validate a Time JSON Web Signature supplied as the 'Token' variable. Ensure
         that the id encoded in the token matches the expected user.  Check for a 'change_password'
         key in the token with a value matching the current user id.  If match exists for specified
-        user, update the user email with the email supplied in the token as 'new_email'."""
+        user, update the user email with the email supplied in the token as 'new_email'.
+        """
         s = TimedSerializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -272,9 +279,10 @@ class User(UserMixin, db.Model):
             raise ValueError("A matching email for the logged-in user could not be found.")
 
     def verify_email(self, email):
-        __doc__ = """
+        """
         Helper method to compare a supplied email with the user's email.  Returns True
-        if email matches, False if not."""
+        if email matches, False if not.
+        """
         if isinstance(email, str):
             email = str(email).upper().strip()
             if self.email.email == email:
@@ -288,9 +296,10 @@ class User(UserMixin, db.Model):
                 return False
 
     def verify_previous_email(self, email):
-        __doc__ = """
+        """
         Helper method to compare a supplied email with the user's previous email.  Returns True
-        if email matches, False if not."""
+        if email matches, False if not.
+        """
         email = str(email).strip().upper()
         previous_email = db.session.query(EmailAddress).join(User).filter(EmailAddress.user == self).filter(
             EmailAddress.primary == False).order_by(EmailAddress.updated_at.desc()).first()
@@ -303,7 +312,7 @@ class User(UserMixin, db.Model):
     # USER PERMISSION LEVEL COMPARISON
     #####################################
     def has_higher_permission(self, user):
-        __doc__ = """
+        """
         User Method:  Helper method that accepts either the userid integer
         of another user, or the user object of another user.
         The method looks up compares the permission level of the other user's role with
@@ -336,7 +345,7 @@ class User(UserMixin, db.Model):
             return False
 
     def is_accessible(self, requesting_user, other_permissions=[], self_permissions=[]):
-        __doc__ = """
+        """
         User Method:
         Helper function that checks whether the base user object should be
         accessible to another user attempting to perform operations on the record.
@@ -387,7 +396,7 @@ class User(UserMixin, db.Model):
             
         Returns:
             True if requesting user has access to base user & operation
-            Fals if requestins user does not have access to base user & operation
+            Fals if requesting user does not have access to base user & operation
 
         """
         if requesting_user:
@@ -436,11 +445,13 @@ class User(UserMixin, db.Model):
     # VERSIONING UTILITY PROPERTIES AND METHODS
     ############################################
     def latest_version(self):
+        """Return the latest version of the User object"""
         if self.versions:
             return self.versions[len(self.versions.all()) - 1]
         raise ValueError('No versions exist for the user object.')
 
     def previous_version(self):
+        """Return the previous version of the User object"""
         try:
             lv = self.latest_version()
             return lv.previous
@@ -448,18 +459,21 @@ class User(UserMixin, db.Model):
             raise ValueError('No versions exist for the user object.')
 
     def first_version(self):
+        """Return the first version of the User object"""
         if self.versions:
             return self.versions[0]
         raise ValueError('No versions exist for the user object.')
 
     @property
     def version_number(self):
+        """Return the current version of the User object as an integer"""
         if self.versions:
             return len(self.versions.all())
         raise ValueError('No versions exist for the user object.')
 
     @property
     def previous_version_url(self):
+        """Return the url of the previous version of the User object"""
         if self.versions and self.version_number > 1:
             return url_for('api_v1.get_user_version', userid=self.id, version_number=self.version_number - 1,
                            _external=True)
@@ -472,25 +486,23 @@ class User(UserMixin, db.Model):
 
     @property
     def joined_year(self):
-        __doc__ = """
-        Represents the year the user record was created with format 'YYYY'"""
+        """Represents the year the user record was created with format 'YYYY'"""
         if self.created_at:
             return self.created_at.strftime('%Y')
         else:
             return None
 
     def ping(self):
-        __doc__ = """
+        """
         Ping function called before each request initiated by authenticated user.
-        Stores timestamp of last request for the user in the 'last_seen' attribute."""
+        Stores timestamp of last request for the user in the 'last_seen' attribute.
+        """
         self.last_seen = datetime.utcnow()
         db.session.add(self)
 
     @property
     def dob_string(self):
-        __doc__ = """
-        Represent User's DOB as a string with format 'YYYY-MM-DD'
-        """
+        """Represent User's DOB as a string with format 'YYYY-MM-DD'"""
         if self.dob:
             return self.dob.strftime('%Y-%m-%d')
         else:
@@ -501,11 +513,12 @@ class User(UserMixin, db.Model):
     ##############################################################################################
 
     def generate_api_auth_token(self, expiration=3600):
-        __doc__ = """
+        """
         Generates a Time JSON Web Signature token, with an expiration of 1 hour
         by default.  Uses the application SECRET KEY to encrypt the token.  Token encrypts the
         user.id attribute with a key of 'id' for future identification use.  The token is supplied
-        in an ascii format, for use with API client.py."""
+        in an ascii format, for use with API client.py.
+        """
         now = datetime.utcnow()
         if self.token and self.token_expiration > now + timedelta(seconds=60):
             return self.token
@@ -515,11 +528,12 @@ class User(UserMixin, db.Model):
         return self.token
 
     def revoke_token(self):
+        """Update token for user to be expired, essentially revoking it"""
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
 
     @staticmethod
     def verify_api_auth_token(token):
-        __doc__ = """
+        """
         User Method:  verify_api_auth_token takes a token and,
         if found valid, returns the user object stored in it and a boolean for Expired
         
@@ -536,7 +550,7 @@ class User(UserMixin, db.Model):
     # USER RANDOMIZATION METHODS
     ##############################################################################################
     def randomize_user(self, demo_dict=None):
-        __doc__ = """
+        """
         User Method: acts upon an initialized user object and randomizes key attributes
         of the user.
         
@@ -578,11 +592,12 @@ class User(UserMixin, db.Model):
     ##############################################################################################
     @staticmethod
     def initialize_admin_user():
-        __doc__ = """
+        """
         User staticmethod: Generates and commits a super_admin user.  Loads user
         attributes stored as environment variables specified as 'UNKANI_ADMIN_*.
         Executed on deployment and db creation.  Checks for existing user with admin's
-        email before attempting to create a new one."""
+        email before attempting to create a new one.
+        """
         user = User.query.get(1)
         if user is None:
             user = User()
@@ -616,9 +631,11 @@ class User(UserMixin, db.Model):
     ##############################################################################################
 
     def generate_row_hash(self):
-        """Generates a sha1 hash of the user attributes.  Used to track whether changes are made
+        """
+        Generates a sha1 hash of the user attributes.  Used to track whether changes are made
         from one version of the user to the next.  Compiles related child object attributes in the user
-        record hash for ease of use."""
+        record hash for ease of use.
+        """
         data = {"username": self.username, "first_name": self.first_name, "last_name": self.last_name,
                 "dob": self.dob_string, "sex": self.sex, "app_group_ids": [x.id for x in self.app_groups],
                 "email_address": self.email.email if self.email else None,
@@ -643,9 +660,11 @@ class User(UserMixin, db.Model):
     ##############################################################################################
 
     def dump(self):
-        """Uses Marshmallows marshaller to dump the default serialized version of the user
+        """
+        Uses Marshmallows marshaller to dump the default serialized version of the user
         object as a python native dictionary.  Used to make serializing the object as easy
-        as calling the object method."""
+        as calling the object method.
+        """
         schema = UserSchema()
         user = schema.dump(self).data
         return user
@@ -656,9 +675,11 @@ class User(UserMixin, db.Model):
 ##################################################################################################
 
 class UserSchema(ma.Schema):
-    """Marshmallow schema, associated with SQLAlchemy User model.  Used as a base object for
+    """
+    Marshmallow schema, associated with SQLAlchemy User model.  Used as a base object for
     serialization and de-serialization.  Defines read-only and write only attributes for basic
-    object use.  Defines validation criteria for input."""
+    object use.  Defines validation criteria for input.
+    """
 
     class Meta:
         # exclude = ()
@@ -692,13 +713,16 @@ class UserSchema(ma.Schema):
         return user.role.dump()
 
     def get_email(self, user):
+        """Get the primary email for the user"""
         return user.email.email
 
     def get_phone(self, user):
+        """Get the primary phone number for the user, formatted appropriately"""
         if user.phone_number:
             return user.phone_number.formatted_phone
 
     def get_address(self, user):
+        """Get the primary address for the user"""
         if user.address:
             schema = AddressSchema(only=('address1', 'address2', 'city', 'state', 'zipcode'))
             address_data, x = schema.dump(user.address)
@@ -707,6 +731,7 @@ class UserSchema(ma.Schema):
             return None
 
     def get_app_groups(self, user):
+        """Get the app groups to which the user belongs"""
         schema = AppGroupSchema(only=('id', 'name'))
         app_groups = []
         for x in user.app_groups:
@@ -715,20 +740,25 @@ class UserSchema(ma.Schema):
         return app_groups
 
     def get_self_url(self, user):
+        """Get the user object url"""
         return user.get_url()
 
     def get_previous_version_url(self, user):
+        """Get the url for the previous version of the user object"""
         return user.previous_version_url
+
 
 ##################################################################################################
 # MARSHMALLOW SCHEMA DEFINITION FOR USER VERSION OBJECT SERIALIZATION
 ##################################################################################################
 
 class UserVersionSchema(ma.Schema):
-    """Marshmallow schema, associated with SQLAlchemy User Version model.  Used as a base object for
+    """
+    Marshmallow schema, associated with SQLAlchemy User Version model.  Used as a base object for
     serialization.  Modifies the default versioned User model to define attributes needed to mimic
     the default user object serialization.  Note, the UserVersion model does not inherit the methods
-    of the parent User class, so some of them are replicated with new methods below."""
+    of the parent User class, so some of them are replicated with new methods below.
+    """
 
     class Meta:
         # exclude = ()
@@ -761,6 +791,7 @@ class UserVersionSchema(ma.Schema):
         return user_version.role.dump()
 
     def get_email(self, user_version):
+        """Get the primary email for the user version"""
         EmailAddressVersion = version_class(EmailAddress)
         email_obj = user_version.email_addresses. \
             filter(EmailAddressVersion.primary == True). \
@@ -769,6 +800,7 @@ class UserVersionSchema(ma.Schema):
             return email_obj.email
 
     def get_phone(self, user_version):
+        """Get the primary phone number for the user version, formatted appropriately"""
         PhoneNumberVersion = version_class(PhoneNumber)
         phone_obj = user_version.phone_numbers \
             .filter(PhoneNumberVersion.primary == True) \
@@ -777,6 +809,7 @@ class UserVersionSchema(ma.Schema):
             return format_phone(phone_obj.number)
 
     def get_address(self, user_version):
+        """Get the primary address for the user version"""
         AddressVersion = version_class(Address)
         address_obj = user_version.addresses.filter(AddressVersion.primary == True).filter(
             AddressVersion.active == True).first()
@@ -786,6 +819,7 @@ class UserVersionSchema(ma.Schema):
             return address_data
 
     def get_app_groups(self, user_version):
+        """Get the app groups to which the user version belongs"""
         schema = AppGroupSchema(only=('id', 'name'))
         app_groups = []
         for x in user_version.app_groups:
@@ -794,6 +828,7 @@ class UserVersionSchema(ma.Schema):
         return app_groups
 
     def get_gravatar_url(self, user_version):
+        """Get the gravatar url for the user version"""
         EmailAddressVersion = version_class(EmailAddress)
         email_obj = user_version.email_addresses. \
             filter(EmailAddressVersion.primary == True). \
@@ -805,15 +840,17 @@ class UserVersionSchema(ma.Schema):
                     url=url, hash=self.avatar_hash, size=100, default='identicon', rating='g')
 
     def get_transaction_data(self, user_version):
+        """Get the date of the transaction associated with the user version object"""
         tx_id = user_version.transaction_id
         tx_userid = user_version.transaction.user_id
         if tx_userid:
             tx_user_url = url_for('api_v1.get_user', userid=tx_userid, _external=True)
         else:
-            tx_user_url=None
+            tx_user_url = None
         return {'transaction_id': tx_id, 'user_id': tx_userid, 'user_url': tx_user_url}
 
     def get_user_url(self, user_version):
+        """Get the url for the user version object"""
         return url_for('api_v1.get_user', userid=user_version.id, _external=True)
 
 
@@ -823,7 +860,7 @@ class UserVersionSchema(ma.Schema):
 
 def unkani_password_hasher(password):
     """
-    A helper function to be called to hash all Unknani passwords.  Employs pbkdf2:sha1 hashing with a
+    A helper function to be called to hash all Unkani passwords.  Employs pbkdf2:sha1 hashing with a
     salt length of 9 by default.
     :param password:
         Type: Str
@@ -835,8 +872,10 @@ def unkani_password_hasher(password):
 
 
 def lookup_user_by_email(email):
-    """Function to facilitate conformity for user lookup by email.  Applies universal email validation function and
-    queries the user based on the existence of the primary / active email joined to the User."""
+    """
+    Function to facilitate conformity for user lookup by email.  Applies universal email validation function and
+    queries the user based on the existence of the primary / active email joined to the User.
+    """
     if isinstance(email, EmailAddress):
         email = email.email
     try:
@@ -847,8 +886,10 @@ def lookup_user_by_email(email):
 
 
 def lookup_user_by_username(username):
-    """Function to facilitate conformity for user lookup by username.  Applies universal username validation function
-    and queries the user based on a match to the username."""
+    """
+    Function to facilitate conformity for user lookup by username.  Applies universal username validation function
+    and queries the user based on a match to the username.
+    """
     try:
         n_username = normalize_username(username=username)
         return db.session.query(User).filter(User.username == n_username).first()
@@ -863,6 +904,7 @@ def lookup_user_by_username(username):
 # to accommodate custom attributes in the user model, not handled by default
 # anonymous user object.
 class AnonymousUser(AnonymousUserMixin):
+    """Subclass of login_manager.AnonymousUser allowing customization"""
     pass
 
 
@@ -876,11 +918,12 @@ login_manager.anonymous_user = AnonymousUser
 # Used by Flask-Login to set current_user()
 @login_manager.user_loader
 def load_user(user_id):
-    __doc__ = """
+    """
     Callback function for User model.  Receives a user id and
     returns either an associated userid for a valid user record, or
     None if no record exists.  Used by Flask-Login to set the
-    current_user attribute."""
+    current_user attribute.
+    """
     return User.query.get(int(user_id))
 
 
@@ -1209,6 +1252,7 @@ class UserAPI:
                 self.errors['warning']['role'] = 'An invalid id was passed as a role_id: {}'.format(self.role_id)
 
     def validate_app_groups(self):
+        """Validate that app_groups supplied are valid"""
         ids = set()
         bad_ids = set()
         if self.app_groups:
@@ -1480,6 +1524,17 @@ class UserAPI:
                                                  ' level than the requesting user.'
 
     def permission_check_app_groups(self):
+        """
+        Permission check when attempting to set app groups for a user.  Ensures appropriate permissions exist
+        for the requesting user.
+
+        Requesting user must have the appropriate permission (app group permission) AND must be a member of the
+        app group to which they are attempting to assign a user object.
+
+        Logs warnings and errors as appropriate
+
+        :return: None
+        """
         if self.app_groups:
             if not app_permission_userappgroupupdate.can():
                 if self.user:
@@ -1496,7 +1551,7 @@ class UserAPI:
                 restricted_ags = []
                 for ag in self.app_groups:
                     if ag not in g.current_user.app_groups and self.app_groups != AppGroup.query.filter(
-                                    AppGroup.default == True).first():
+                            AppGroup.default is True).first():
                         restricted_ags.append(ag)
                     if restricted_ags:
                         for ag in restricted_ags:
@@ -1507,7 +1562,7 @@ class UserAPI:
                             self.errors['warning'][
                                 'app group membership'] = 'Authenticated user attempted to assign the' \
                                                           ' existing user to one or more app groups ' \
-                                                          'of which the authenicated user is not a member.  The ' \
+                                                          'of which the authenticated user is not a member.  The ' \
                                                           'existing app group was retained.  Bad app groups: {}'.format(
                                 restricted_ags)
                         else:
@@ -1518,9 +1573,7 @@ class UserAPI:
                             self.app_groups = None
 
     def run_validations(self):
-        """
-        Convenience method to run all validations.
-        """
+        """Convenience method to run all validations."""
         self.validate_first_name()
         self.validate_last_name()
         self.validate_dob()
