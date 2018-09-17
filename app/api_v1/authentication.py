@@ -1,8 +1,8 @@
 from flask import g, jsonify, url_for, current_app
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
-from flask_principal import identity_changed, Identity, AnonymousIdentity, identity_loaded, UserNeed, RoleNeed
+from flask_principal import identity_changed, Identity, identity_loaded, UserNeed, RoleNeed
 from app.extensions import db
-from app.models.user import User, AnonymousUser
+from app.models.user import User
 from app.models.fhir.email_address import EmailAddress
 from app.models.role import Role
 from app.security import AppPermissionNeed
@@ -100,7 +100,7 @@ def on_identity_loaded(sender, identity):
     if getattr(g, 'current_user', None):
         identity.user = g.current_user
     else:
-        identity.user = AnonymousUser
+        identity.user = None
     # Add the UserNeed to the identity
     if hasattr(identity.user, 'id'):
         identity.provides.add(UserNeed(identity.user.id))

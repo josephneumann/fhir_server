@@ -1,12 +1,11 @@
 import os, hashlib, json, base64
 from flask import current_app, g, url_for
 from sqlalchemy.ext.hybrid import hybrid_property
-from flask_login import UserMixin, AnonymousUserMixin
 from marshmallow import fields, ValidationError
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from app.extensions import db, login_manager, ma
+from app.extensions import db, ma
 from app.flask_sendgrid import send_email
 from app.models.fhir.phone_number import PhoneNumberAPI
 from app.models.fhir.email_address import EmailAddress, EmailAddressAPI
@@ -27,7 +26,7 @@ from sqlalchemy_continuum import version_class
 # SQL ALCHEMY USER MODEL DEFINITION
 ##################################################################################################
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     """Flask-SQLAlchemy model for User object"""
     ##################################
     # MODEL ATTRIBUTES AND PROPERTIES
@@ -869,12 +868,12 @@ def lookup_user_by_username(username):
 # Created for future use.  May need to be augmented from Flask-Login standard
 # to accommodate custom attributes in the user model, not handled by default
 # anonymous user object.
-class AnonymousUser(AnonymousUserMixin):
-    """Subclass of login_manager.AnonymousUser allowing customization"""
-    pass
-
-
-login_manager.anonymous_user = AnonymousUser
+# class AnonymousUser(AnonymousUserMixin):
+#     """Subclass of login_manager.AnonymousUser allowing customization"""
+#     pass
+#
+#
+# login_manager.anonymous_user = AnonymousUser
 
 
 ###################################################
@@ -882,15 +881,15 @@ login_manager.anonymous_user = AnonymousUser
 ###################################################
 # Callback function, receives a user identifier and
 # Used by Flask-Login to set current_user()
-@login_manager.user_loader
-def load_user(user_id):
-    """
-    Callback function for User model.  Receives a user id and
-    returns either an associated userid for a valid user record, or
-    None if no record exists.  Used by Flask-Login to set the
-    current_user attribute.
-    """
-    return User.query.get(int(user_id))
+# @login_manager.user_loader
+# def load_user(user_id):
+#     """
+#     Callback function for User model.  Receives a user id and
+#     returns either an associated userid for a valid user record, or
+#     None if no record exists.  Used by Flask-Login to set the
+#     current_user attribute.
+#     """
+#     return User.query.get(int(user_id))
 
 
 ##################################################################################################

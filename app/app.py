@@ -5,7 +5,7 @@ from flask import Flask
 from flask_sslify import SSLify
 from sqlalchemy import or_, and_, any_
 from config import config
-from app.extensions import db, login_manager, ma, redis, principal, session, migrate
+from app.extensions import db, ma, redis, principal, session, migrate
 from app import api_v1, commands
 
 from app.models.user import User, UserAPI
@@ -40,11 +40,6 @@ def register_extensions(app):
     app.config.update(SESSION_REDIS=redis)
     migrate.init_app(app, db)
     db.init_app(app)
-    login_manager.session_protection = 'strong'
-    # login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'You must log in to view this page.'
-    login_manager.login_message_category = 'info'
-    login_manager.init_app(app)
     principal.init_app(app)
     ma.init_app(app)
     if app.config.get('SERVER_SESSION'):
