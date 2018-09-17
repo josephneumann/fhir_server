@@ -28,7 +28,6 @@ def get_users():
     # TODO: Fix error that arises when passing filter=version_number,eq,1
 
     # Set variables for query to execute
-    app_groups = g.current_user.app_groups
     app_group_ids = []
     for i in g.current_user.app_groups:
         app_group_ids.append(i.id)
