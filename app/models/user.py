@@ -1,5 +1,5 @@
 import os, hashlib, json, base64
-from flask import current_app, g, url_for, has_request_context
+from flask import current_app, g, url_for
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin, AnonymousUserMixin
 from marshmallow import fields, ValidationError
