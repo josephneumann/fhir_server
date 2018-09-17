@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Extensions module. Each extension is initialized in the app factory located in app.py."""
 import os
-from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_principal import Principal
 from flask_sqlalchemy import SQLAlchemy
@@ -10,7 +9,6 @@ from flask_session import Session
 from flask_migrate import Migrate
 
 db = SQLAlchemy()
-login_manager = LoginManager()
 ma = Marshmallow()
 principal = Principal()
 session = Session()
