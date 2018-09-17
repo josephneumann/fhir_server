@@ -12,7 +12,6 @@ Flask-HTTPAuth==3.2.4
 flask-marshmallow==0.9.0
 Flask-Migrate==2.2.1
 Flask-Principal==0.4.0
-Flask-Session==0.3.1
 Flask-SQLAlchemy==2.3.2
 Flask-SSLify==0.1.5
 Flask-Testing==0.7.1

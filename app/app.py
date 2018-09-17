@@ -5,7 +5,7 @@ from flask import Flask
 from flask_sslify import SSLify
 from sqlalchemy import or_, and_, any_
 from config import config
-from app.extensions import db, ma, redis, principal, session, migrate
+from app.extensions import db, ma, principal, migrate
 from app import api_v1, commands
 
 from app.models.user import User, UserAPI
@@ -37,13 +37,10 @@ def create_app(config_name=None):
 def register_extensions(app):
     """Register Flask extensions"""
 
-    app.config.update(SESSION_REDIS=redis)
     migrate.init_app(app, db)
     db.init_app(app)
     principal.init_app(app)
     ma.init_app(app)
-    if app.config.get('SERVER_SESSION'):
-        session.init_app(app)
     if not app.config['SSL_DISABLE']:  # pragma: no cover
         sslify = SSLify(app)
     return None

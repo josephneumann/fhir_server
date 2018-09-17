@@ -26,9 +26,6 @@ class Config:
     SENDGRID_USERNAME = os.environ.get('SENDGRID_USERNAME')
     SENDGRID_DEFAULT_FROM = 'admin@unkani.com'
 
-    SERVER_SESSION = True
-    SESSION_TYPE = 'redis'
-
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
     BROKER_TRANSPORT = 'redis',
 
@@ -94,6 +91,7 @@ class DevelopmentConfig(Config):
     ]
     SERVER_NAME = '127.0.0.1:5000'
 
+
 class TestingConfig(Config):
     FLASK_DEBUG = True
     TESTING = True
@@ -104,7 +102,6 @@ class TestingConfig(Config):
     SSL_DISABLE = True
     SENTRY_DISABLE = True
     USE_RATE_LIMITS = False
-    SERVER_SESSION = False
 
 
 class StagingConfig(Config):
@@ -125,7 +122,6 @@ class ProductionConfig(Config):
     SSL_DISABLE = False
     SENTRY_DISABLE = False
     USE_RATE_LIMITS = False
-    SERVER_SESSION = True
 
     @classmethod
     def init_app(cls, app):
