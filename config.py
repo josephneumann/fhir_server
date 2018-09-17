@@ -76,7 +76,7 @@ class DevelopmentConfig(Config):
     SENTRY_DISABLE = True
     USE_RATE_LIMITS = True
     WTF_CSRF_ENABLED = False
-    EXPLAIN_TEMPLATE_LOADING = True
+    # EXPLAIN_TEMPLATE_LOADING = True
     SYNTHEA_SCRIPT_LOCATION = '/Users/jneumann/Code/synthea'
     SYNTHEA_GEOGRAPHY = [
         ('Wisconsin', 'Madison', 200)
@@ -92,6 +92,7 @@ class DevelopmentConfig(Config):
         , ('Wisconsin', 'Waunakee', 9)
         , ('Wisconsin', 'Verona', 7)
     ]
+    SERVER_NAME = '127.0.0.1:5000'
 
 class TestingConfig(Config):
     FLASK_DEBUG = True

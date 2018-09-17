@@ -101,6 +101,7 @@ class User(UserMixin, db.Model):
         Returns the primary email for the account.
         Users may only have one Active and Primary email per account
         All other emails (old emails) must be inactive and non primary
+        :return SQLAlchemy EmailAddress object or None
         """
         return self.email_addresses.filter(EmailAddress.primary == True).filter(EmailAddress.active == True).first()
 
@@ -116,7 +117,7 @@ class User(UserMixin, db.Model):
         Users may only have one Active and Primary phone number per account
         All other phone numbers (old) must be inactive and non primary
         """
-        return self.phone_numbers.filter(PhoneNumber.primary == True).filter(PhoneNumber.active == True).first()
+        return self.phone_numbers.filter(PhoneNumber.primary).filter(PhoneNumber.active == True).first()
 
     @phone_number.setter
     def phone_number(self, phone=None):
@@ -130,7 +131,7 @@ class User(UserMixin, db.Model):
         Users may only have one Active and Primary address per account
         All other addresses (old) must be inactive and non primary
         """
-        return self.addresses.filter(Address.primary == True).filter(Address.active == True).first()
+        return self.addresses.filter(Address.primary).filter(Address.active).first()
 
     @address.setter
     def address(self, address=None):
@@ -146,9 +147,7 @@ class User(UserMixin, db.Model):
         :return:
             Returns the absolute URL of the User resource in the User api.
         """
-        if has_request_context():
-            return url_for('api_v1.get_user', userid=self.id, _external=True)
-        return None
+        return url_for('api_v1.get_user', userid=self.id, _external=True)
 
     ####################################
     # PASSWORD HASHING AND VERIFICATION
@@ -311,39 +310,6 @@ class User(UserMixin, db.Model):
     #####################################
     # USER PERMISSION LEVEL COMPARISON
     #####################################
-    def has_higher_permission(self, user):
-        """
-        User Method:  Helper method that accepts either the userid integer
-        of another user, or the user object of another user.
-        The method looks up compares the permission level of the other user's role with
-        the permission level of the base user object's role.  Returns True of the
-        base user object's permission level is higher than the other user's
-        permission level.  Else, the method returns False.
-
-        Used to protect access to actions performed on other users.
-
-
-        param <user>:
-            If an integer is pased, the function expects an integer userid to be
-            supplied as the 'user' parameter.  The method then looks up
-            the corresponding user record to perform the comparison.
-
-            Non integer value passed, the function expects a complete user object
-            to be supplied.  The method then compares the base user object to the
-            user object supplied as a parameter.
-            This configuration helps to avoid un-necessary object lookup.
-
-        """
-        other_user = user
-        if isinstance(other_user, int):
-            other_user = User.query.get(user)
-        if not other_user:
-            return True
-        if self.role.level > other_user.role.level:
-            return True
-        else:
-            return False
-
     def is_accessible(self, requesting_user, other_permissions=[], self_permissions=[]):
         """
         User Method:
@@ -534,7 +500,7 @@ class User(UserMixin, db.Model):
     @staticmethod
     def verify_api_auth_token(token):
         """
-        User Method:  verify_api_auth_token takes a token and,
+        User Method:  verify_api_auth_token takes a token and
         if found valid, returns the user object stored in it and a boolean for Expired
         
         (user, expired)

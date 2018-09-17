@@ -287,10 +287,7 @@ class Patient(db.Model):
         :return:
             Returns the absolute URL of the Patient resource in the Patient api.
         """
-        if has_request_context():
-            return url_for('api_v1.patient_read', patientid=self.id, _external=True)
-        else:
-            return None
+        return url_for('api_v1.patient_read', patientid=self.id, _external=True)
 
     ############################################
     # VERSIONING UTILITY PROPERTIES AND METHODS
