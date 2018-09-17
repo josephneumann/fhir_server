@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The app module, containing the app factory function"""
 import os
-from flask import Flask
+from flask import Flask, sessions, g
 from flask_sslify import SSLify
 from sqlalchemy import or_, and_, any_
 from config import config
@@ -77,3 +77,17 @@ def register_commands(app):
     app.cli.add_command(commands.patients)
     app.cli.add_command(commands.synthea)
     return None
+
+
+class CustomSessionInterface(sessions.SecureCookieSessionInterface):
+    """Disable default cookie generation."""
+
+    def should_set_cookie(self, *args, **kwargs):
+        return False
+
+    """Prevent creating session from API requests."""
+
+    def save_session(self, *args, **kwargs):
+        if g.get('api_auth'):
+            return
+        return super(CustomSessionInterface, self).save_session(*args, **kwargs)

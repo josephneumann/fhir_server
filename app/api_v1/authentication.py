@@ -1,4 +1,4 @@
-from flask import g, jsonify, url_for, current_app
+from flask import g, jsonify, url_for, current_app, session
 from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
 from flask_principal import identity_changed, Identity, identity_loaded, UserNeed, RoleNeed
 from app.extensions import db
@@ -29,6 +29,7 @@ def verify_password(email, password):
     if not user.active:
         raise BasicAuthError("HTTP Basic-auth failed on condition: User account is inactive")
     setattr(g, 'current_user', user)
+    setattr(g, 'api_auth', True)  # Set a flag in request g to indicate this is an API request
     identity_changed.send(current_app._get_current_object(),
                           identity=Identity(user.id))
     return True
@@ -62,6 +63,7 @@ def verify_token(token):
     # Since sessions are not used in RESTapi, there should not be any authentication info stored in session with
     # flask-login's login_user function
     setattr(g, 'current_user', user)
+    setattr(g, 'api_auth', True)  # Set a flag in request g to indicate this is an API request
     identity_changed.send(current_app._get_current_object(),
                           identity=Identity(user.id))
     return True
@@ -107,7 +109,6 @@ def on_identity_loaded(sender, identity):
     # Update the identity with the roles that the user provides
     if hasattr(identity.user, 'role_id'):
         role = Role.query.join(User).filter(User.id == identity.user.id).first()
-        # role = Role.query.filter_by(id=identity.user.role_id).first()
         identity.provides.add(RoleNeed(role.name))
         app_permissions = role.app_permissions
         for perm in app_permissions:
