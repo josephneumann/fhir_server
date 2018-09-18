@@ -66,7 +66,7 @@ class User(db.Model):
     row_hash = db.Column(db.Text, index=True)
 
     def __init__(self, username=None, first_name=None, last_name=None, dob=None, description=None,
-                 password=None, sex=None, role_id=None, confirmed=False, active=True, **kwargs):
+                 password=None, sex=None, role_id=None, app_group_id=None, confirmed=False, active=True, **kwargs):
         self.username = username
         self.password = password
         self.dob = dob
@@ -85,6 +85,14 @@ class User(db.Model):
         if not self.role:
             role = Role.query.filter_by(default=True).first()
             self.role = role
+
+        default_app_group = AppGroup.query.filter(AppGroup.default).first()
+        if isinstance(app_group_id, int):
+            app_group = AppGroup.query.get(app_group_id)
+            if app_group:
+                self.app_groups.append(app_group)
+        if not self.app_groups and default_app_group:
+            self.app_groups.append(default_app_group)
 
     def __repr__(self):  # pragma: no cover
         """Represents User model instance as a string"""
@@ -577,7 +585,6 @@ class User(db.Model):
         self.addresses.append(addr)
         self.phone_numbers.append(PhoneNumber(number=demo_dict.get("mobile_phone", None), type='MOBILE', primary=True))
         self.description = random_description(max_chars=200)
-        self.app_groups.append(AppGroup.query.filter(AppGroup.default == True).first())
         test_pw = os.environ.get('TEST_USER_PASSWORD', None)
         if not test_pw:
             test_pw = demo_dict.get('password', None)
@@ -635,7 +642,7 @@ class User(db.Model):
         record hash for ease of use.
         """
         data = {"username": self.username, "first_name": self.first_name, "last_name": self.last_name,
-                "dob": self.dob_string, "sex": self.sex, "app_group_ids": [x.id for x in self.app_groups],
+                "dob": self.dob_string, "sex": self.sex, "app_group_ids": [x.id for x in self.app_groups if x],
                 "email_address": self.email.email if self.email else None,
                 "phone_number": self.phone_number.number if self.phone_number else None,
                 "address_hash": self.address.address_hash if self.address else None,
@@ -1735,3 +1742,13 @@ class UserAPI:
             self.user = u
             # Return the user and the error dict
             return self.user, self.errors
+
+
+def load_user(user_id):
+    """
+    Callback function for User model.  Receives a user id and
+    returns either an associated userid for a valid user record, or
+    None if no record exists.  Can be used by Flask-Login to set the
+    current_user attribute.
+    """
+    return User.query.get(int(user_id))

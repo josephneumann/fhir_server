@@ -3,6 +3,7 @@ from app.extensions import db
 from app.app import create_app as create_application
 from app.user.models.user import User, Role
 from app.user.models.app_permission import AppPermission
+from app.user.models.app_group import AppGroup
 
 # Default user information for testing authentication
 user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",
@@ -30,6 +31,7 @@ class BaseClientTestCase(TestCase):
         db.create_all()
         AppPermission.initialize_app_permissions()
         Role.initialize_roles()
+        AppGroup.initialize_app_groups()
         self.client = self.app.test_client(use_cookies=True)
 
     def tearDown(self):
@@ -37,17 +39,16 @@ class BaseClientTestCase(TestCase):
         db.drop_all()
         db.create_all()
 
-    def create_test_user(self, username=user_dict.get("username"),
-                         email=user_dict.get("email"),
-                         password=user_dict.get("password"),
-                         confirmed=user_dict.get("confirmed"),
-                         first_name=user_dict.get("first_name"),
-                         last_name=user_dict.get("last_name"),
-                         ):
-        u = User(username=username, email=email, password=password, confirmed=confirmed, first_name=first_name,
-                 last_name=last_name)
-        db.session.add(u)
-        db.session.commit()
 
-    def get_test_user(self, username=user_dict.get("username")):
-        return User.query.filter_by(_username=username.upper()).first()
+def create_test_user(username=user_dict.get("username"),
+                     email=user_dict.get("email"),
+                     password=user_dict.get("password"),
+                     confirmed=user_dict.get("confirmed"),
+                     first_name=user_dict.get("first_name"),
+                     last_name=user_dict.get("last_name"),
+                     ):
+    u = User(username=username, email=email, password=password, confirmed=confirmed, first_name=first_name,
+             last_name=last_name)
+    db.session.add(u)
+    db.session.commit()
+    return u

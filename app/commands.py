@@ -112,16 +112,6 @@ def deploy():
 
 @click.command()
 @with_appcontext
-def drop_all():
-    """Drop all tables in the database"""
-    if click.confirm(text='This will drop all tables, do you want to continue?', default=False, show_default=True):
-        db.engine.execute("drop schema if exists public cascade")
-        db.engine.execute("create schema public")
-        print("All tables have been dropped.")
-
-
-@click.command()
-@with_appcontext
 def gunicorn():
     """Starts the application with the Gunicorn
     webserver on the localhost bound to port 5000"""
@@ -153,5 +143,14 @@ def patients():
 @click.command()
 @click.option('--population', '-p', default=100, type=int)
 def synthea(population):
-    """Create synthetic patient records using Synthea"""
+    """Create synthetic patient FHIR records using Synthea"""
     run_synthea(total_population=population)
+
+
+@click.command()
+@with_appcontext
+def drop_all():
+    if click.confirm(text='This will drop all tables, do you want to continue?', default=False, show_default=True):
+        db.engine.execute("drop schema if exists public cascade")
+        db.engine.execute("create schema public")
+        print("All tables have been dropped.")

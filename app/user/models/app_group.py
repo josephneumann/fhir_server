@@ -8,8 +8,10 @@ from marshmallow import fields
 ##################################################################################################
 
 user_app_group = db.Table('user_app_group',
-                          db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-                          db.Column('app_group_id', db.Integer, db.ForeignKey('app_group.id'), primary_key=True))
+                          db.Column('user_id', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'),
+                                    primary_key=True),
+                          db.Column('app_group_id', db.Integer, db.ForeignKey('app_group.id', ondelete='CASCADE'),
+                                    primary_key=True))
 
 
 ###################################################################################################

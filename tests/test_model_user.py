@@ -1,5 +1,5 @@
 import time
-from tests.utils import BaseClientTestCase, user_dict
+from tests.utils import BaseClientTestCase, user_dict, create_test_user
 from app.user.models.user import User, Role, load_user
 from app.extensions import db
 
@@ -78,12 +78,6 @@ class UserModelTestCase(BaseClientTestCase):
         self.assertFalse(u2.reset_password(none_token, 'horse'))
         self.assertTrue(u2.verify_password('dog'))
 
-    def test_verify_email(self):
-        self.create_test_user()
-        u = self.get_test_user()
-        self.assertTrue(u.verify_email(user_dict.get('email')))
-        self.assertFalse(u.verify_email('foobar'))
-
     def test_load_user(self):
         u = User(username='testuser')
         db.session.add(u)
@@ -96,7 +90,6 @@ class UserModelTestCase(BaseClientTestCase):
         user = User()
         user.randomize_user()
         db.session.add(user)
-        db.session.commit()
         self.assertTrue(user is not None)
         self.assertTrue(user.email is not None)
         self.assertTrue(user.phone_number.number is not None)

@@ -1,8 +1,8 @@
-"""initial model migration
+"""Initial unkani-server model migration
 
-Revision ID: 43b2beea5ab3
+Revision ID: 89c380fb95ef
 Revises: 
-Create Date: 2018-02-13 14:00:08.690298
+Create Date: 2018-09-18 10:17:49.872468
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '43b2beea5ab3'
+revision = '89c380fb95ef'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -398,8 +398,8 @@ def upgrade():
     op.create_table('role_app_permission',
                     sa.Column('role_id', sa.Integer(), nullable=False),
                     sa.Column('app_permission_id', sa.Integer(), nullable=False),
-                    sa.ForeignKeyConstraint(['app_permission_id'], ['app_permission.id'], ),
-                    sa.ForeignKeyConstraint(['role_id'], ['role.id'], ),
+                    sa.ForeignKeyConstraint(['app_permission_id'], ['app_permission.id'], ondelete='CASCADE'),
+                    sa.ForeignKeyConstraint(['role_id'], ['role.id'], ondelete='CASCADE'),
                     sa.PrimaryKeyConstraint('role_id', 'app_permission_id')
                     )
     op.create_table('source_data_codesystem',
@@ -515,7 +515,7 @@ def upgrade():
     op.create_index(op.f('ix_phone_number_user_id'), 'phone_number', ['user_id'], unique=False)
     op.create_table('transaction',
                     sa.Column('issued_at', sa.DateTime(), nullable=True),
-                    sa.Column('id', sa.BigInteger(), nullable=False),
+                    sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
                     sa.Column('remote_addr', sa.String(length=50), nullable=True),
                     sa.Column('user_id', sa.Integer(), nullable=True),
                     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
@@ -525,8 +525,8 @@ def upgrade():
     op.create_table('user_app_group',
                     sa.Column('user_id', sa.Integer(), nullable=False),
                     sa.Column('app_group_id', sa.Integer(), nullable=False),
-                    sa.ForeignKeyConstraint(['app_group_id'], ['app_group.id'], ),
-                    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+                    sa.ForeignKeyConstraint(['app_group_id'], ['app_group.id'], ondelete='CASCADE'),
+                    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
                     sa.PrimaryKeyConstraint('user_id', 'app_group_id')
                     )
 

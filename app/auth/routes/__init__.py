@@ -1,1 +1,1 @@
-from . import authentication, index
+from . import authentication

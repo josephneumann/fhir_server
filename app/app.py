@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The app module, containing the app factory function"""
 import os
-from flask import Flask, sessions, g
+from flask import Flask, sessions
 from flask_sslify import SSLify
 from sqlalchemy import or_, and_, any_
 from sqlalchemy.orm import configure_mappers
@@ -24,6 +24,7 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_shell_context(app)
     register_commands(app)
+
     configure_mappers()
     return app
 
@@ -31,7 +32,7 @@ def create_app(config_name=None):
 def register_extensions(app):
     """Register Flask extensions"""
 
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, directory='migrations')
     db.init_app(app)
     principal.init_app(app)
     ma.init_app(app)
@@ -83,11 +84,12 @@ def register_commands(app):
     """Register Click commands."""
     app.cli.add_command(commands.test)
     app.cli.add_command(commands.deploy)
-    app.cli.add_command(commands.drop_all)
     app.cli.add_command(commands.gunicorn)
     app.cli.add_command(commands.patients)
     app.cli.add_command(commands.synthea)
+    app.cli.add_command(commands.drop_all)
     return None
+
 
 class CustomSessionInterface(sessions.SecureCookieSessionInterface):
     """Disable default cookie generation."""
