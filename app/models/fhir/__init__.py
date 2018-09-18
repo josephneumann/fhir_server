@@ -1,1 +1,0 @@
-"""FHIR Resource SQlAlchemy Models"""

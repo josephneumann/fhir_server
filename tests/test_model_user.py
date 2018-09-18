@@ -1,6 +1,6 @@
 import time
 from tests.utils import BaseClientTestCase, user_dict
-from app.models.user import User, Role, load_user
+from app.user.models.user import User, Role, load_user
 from app.extensions import db
 
 

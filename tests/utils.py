@@ -1,9 +1,8 @@
-from flask import url_for
 from flask_testing import TestCase
 from app.extensions import db
 from app.app import create_app as create_application
-from app.models.user import User, Role
-from app.models.app_permission import AppPermission
+from app.user.models.user import User, Role
+from app.user.models.app_permission import AppPermission
 
 # Default user information for testing authentication
 user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",

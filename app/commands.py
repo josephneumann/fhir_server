@@ -1,16 +1,17 @@
 import os, subprocess, sys, time, click, unittest
 from flask import current_app
 from flask.cli import with_appcontext
+
 from app.extensions import db
-from app.utils.demographics import random_demographics
-from app.utils.synthea import run_synthea
-from app.models.fhir.codesets import process_fhir_codeset, get_fhir_codeset
-from app.models.user import User
-from app.models.role import Role
-from app.models.fhir.patient import Patient
-from app.models.app_permission import AppPermission
-from app.models.app_group import AppGroup
-from app.models.source_data import SourceData
+from app.main.utils.demographics import random_demographics
+from app.main.utils.synthea import run_synthea
+from app.main.models.source_data import SourceData
+from app.fhir.models.codesets import process_fhir_codeset, get_fhir_codeset
+from app.fhir.models.patient import Patient
+from app.user.models.user import User
+from app.user.models.role import Role
+from app.user.models.app_permission import AppPermission
+from app.user.models.app_group import AppGroup
 
 
 @click.command()

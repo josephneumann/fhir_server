@@ -4,21 +4,14 @@ import os
 from flask import Flask, sessions, g
 from flask_sslify import SSLify
 from sqlalchemy import or_, and_, any_
+from sqlalchemy.orm import configure_mappers
+
 from config import config
 from app.extensions import db, ma, principal, migrate
-from app import api_v1, commands
-
-from app.models.user import User, UserAPI
-from app.models.role import Role
-from app.models.fhir.patient import Patient
-from app.models.app_permission import AppPermission, role_app_permission
-from app.models.fhir.address import Address, AddressAPI
-from app.models.fhir.email_address import EmailAddress, EmailAddressAPI
-from app.models.app_group import AppGroup, user_app_group
-from app.models.fhir.phone_number import PhoneNumber, PhoneNumberAPI
-from app.models.fhir.organization import Organization
-from app.models.source_data import SourceData
-from app.models.fhir.codesets import CodeSystem, ValueSet
+from app import auth, errors, fhir, main, user, commands
+from app.fhir import models as fhirmodels
+from app.user import models as usermodels
+from app.main import models as mainmodels
 
 
 def create_app(config_name=None):
@@ -31,6 +24,7 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_shell_context(app)
     register_commands(app)
+    configure_mappers()
     return app
 
 
@@ -48,7 +42,11 @@ def register_extensions(app):
 
 def register_blueprints(app):
     """Register Flask Blueprints"""
-    app.register_blueprint(api_v1.api_bp, url_prefix='/api/v1')
+    app.register_blueprint(main.bp_main, url_prefix='/api/v1/')
+    app.register_blueprint(auth.bp_auth, url_prefix='/api/v1/')
+    app.register_blueprint(errors.bp_errors, url_prefix='/api/v1/')
+    app.register_blueprint(fhir.bp_fhir, url_prefix='/api/v1/')
+    app.register_blueprint(user.bp_user, url_prefix='/api/v1/')
     return None
 
 
@@ -57,12 +55,25 @@ def register_shell_context(app):
 
     def shell_context():
         """Shell context objects"""
-        return dict(app=app, db=db, PhoneNumber=PhoneNumber, User=User, Role=Role, AppPermission=AppPermission,
-                    Patient=Patient, Address=Address, EmailAddress=EmailAddress, AppGroup=AppGroup, UserAPI=UserAPI,
-                    user_app_group=user_app_group, EmailAddressAPI=EmailAddressAPI, PhoneNumberAPI=PhoneNumberAPI,
-                    role_app_permission=role_app_permission, AddressAPI=AddressAPI, Organization=Organization,
-                    SourceData=SourceData, CodeSystem=CodeSystem, ValueSet=ValueSet,
-                    or_=or_, and_=and_, any_=any_)
+        return dict(app=app,
+                    db=db,
+                    User=usermodels.user.User,
+                    Role=usermodels.role.Role,
+                    AppGroup=usermodels.app_group.AppGroup,
+                    AppPermission=usermodels.app_permission.AppPermission,
+                    role_app_permission=usermodels.app_permission.role_app_permission,
+                    user_app_group=usermodels.app_group.user_app_group,
+                    Patient=fhirmodels.patient.Patient,
+                    Address=fhirmodels.address.Address,
+                    PhoneNumber=fhirmodels.phone_number.PhoneNumber,
+                    EmailAddress=fhirmodels.email_address.EmailAddress,
+                    Organization=fhirmodels.organization.Organization,
+                    SourceData=mainmodels.source_data.SourceData,
+                    CodeSystem=fhirmodels.codesets.CodeSystem,
+                    ValueSet=fhirmodels.codesets.ValueSet,
+                    or_=or_,
+                    and_=and_,
+                    any_=any_)
 
     app.shell_context_processor(shell_context)
     return None
@@ -77,7 +88,6 @@ def register_commands(app):
     app.cli.add_command(commands.patients)
     app.cli.add_command(commands.synthea)
     return None
-
 
 class CustomSessionInterface(sessions.SecureCookieSessionInterface):
     """Disable default cookie generation."""
