@@ -309,6 +309,39 @@ class User(db.Model):
     #####################################
     # USER PERMISSION LEVEL COMPARISON
     #####################################
+    def has_higher_permission(self, user):
+        __doc__ = """
+        User Method:  Helper method that accepts either the userid integer
+        of another user, or the user object of another user.
+        The method looks up compares the permission level of the other user's role with
+        the permission level of the base user object's role.  Returns True of the
+        base user object's permission level is higher than the other user's
+        permission level.  Else, the method returns False.
+
+        Used to protect access to actions performed on other users.
+
+
+        param <user>:
+            If an integer is pased, the function expects an integer userid to be
+            supplied as the 'user' parameter.  The method then looks up
+            the corresponding user record to perform the comparison.
+
+            Non integer value passed, the function expects a complete user object
+            to be supplied.  The method then compares the base user object to the
+            user object supplied as a parameter.
+            This configuration helps to avoid un-necessary object lookup.
+
+        """
+        other_user = user
+        if isinstance(other_user, int):
+            other_user = User.query.get(user)
+        if not other_user:
+            return True
+        if self.role.level > other_user.role.level:
+            return True
+        else:
+            return False
+
     def is_accessible(self, requesting_user, other_permissions=[], self_permissions=[]):
         """
         User Method:
@@ -384,7 +417,7 @@ class User(db.Model):
                 for perm in self_permissions:
                     if not perm.can():
                         return False
-        # Stuff to check is user is accessing another user
+        # Stuff to check if user is accessing another user
         else:
             # Check for overlap between app groups.  If no shared group, deny access
             if not (set(self.app_groups) & set(requesting_user.app_groups)):
