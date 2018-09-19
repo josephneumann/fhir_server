@@ -1,6 +1,8 @@
 import time
 from tests.base_test_client import FlaskTestClient
 from app.user.models.user import User, Role, load_user
+from app.user.models.app_group import AppGroup
+from app.auth.security import app_group_dict
 from app.extensions import db
 
 user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",
@@ -179,3 +181,50 @@ class UserModelTestCase(FlaskTestClient):
         u = User(username=user_dict.get('username'), role=None)
         db.session.add(u)
         self.assertIs(u.role, Role.query.filter_by(default=True).first(), 'Default role not assigned')
+
+    def test_initialize_app_groups_staticmethod(self):
+        """
+        Test AppGroup.initialize_app_groups() to ensure app_group records
+        are created as expected
+        """
+        # Note: AppGroup initialization completed in SetUp
+        ag_names = {x.name for x in AppGroup.query.all()}
+        self.assertIsNotNone(ag_names, 'ApGroups not initialized')
+        expected_names = {x for x in app_group_dict}
+        self.assertEqual(ag_names, expected_names, 'AppGroups created do not match expected')
+        
+    def test_init_appgroup_assign_integer(self):
+        """
+        Test assigning app_groups on User initialization
+        --Allow for integer app_group.id on init
+        """
+        u = User(username=user_dict.get('username'), app_group=1)
+        db.session.add(u)
+        self.assertIsInstance(u.app_groups[0], AppGroup)
+        self.assertEqual(u.app_groups[0].id, 1, 'AppGroup id integer not processed during User init')
+        db.session.delete(u)
+
+        bad_id = AppGroup.query.order_by(AppGroup.id.desc()).first().id + 1
+        u = User(username=user_dict.get('username'), app_group=bad_id)
+        db.session.add(u)
+        self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(), 'Default app-group not assigned to User')
+        self.assertNotEqual(u.app_groups[0].id, bad_id, 'Default app-group not assigned to User')
+
+    def test_init_appgroup_assign_object(self):
+        """
+        Test assigning app_groups on User initialization
+        --Allow for passing SQLAlchemy AppGroup object on init
+        """
+        appgroup = AppGroup.query.filter_by(default=False).first()
+        u = User(username=user_dict.get('username'), app_group=appgroup)
+        db.session.add(u)
+        self.assertIs(u.app_groups[0], appgroup, 'Could not assign AppGroup object to User during init')
+
+    def test_init_appgroup_assign_default(self):
+        """
+        Test assigning app_groups on User initialization
+        --Confirm default AppGroup is assigned
+        """
+        u = User(username=user_dict.get('username'), app_group=None)
+        db.session.add(u)
+        self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(), 'Default appgroup not assigned')
