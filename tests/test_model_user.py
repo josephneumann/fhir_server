@@ -1,10 +1,29 @@
 import time
-from tests.utils import BaseClientTestCase, user_dict, create_test_user
+from tests.base_test_client import FlaskTestClient
 from app.user.models.user import User, Role, load_user
 from app.extensions import db
 
+user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",
+                 username="JOHN.DOE",
+                 password="testpw",
+                 first_name="JOHN",
+                 last_name="DOE",
+                 confirmed=True)
 
-class UserModelTestCase(BaseClientTestCase):
+def create_test_user(username=user_dict.get("username"),
+                     email=user_dict.get("email"),
+                     password=user_dict.get("password"),
+                     confirmed=user_dict.get("confirmed"),
+                     first_name=user_dict.get("first_name"),
+                     last_name=user_dict.get("last_name"),
+                     ):
+    u = User(username=username, password=password, confirmed=confirmed, first_name=first_name,
+             last_name=last_name)
+    db.session.add(u)
+    return u
+
+
+class UserModelTestCase(FlaskTestClient):
 
     def test_password_setter(self):
         u = User(password='cat')
@@ -108,3 +127,16 @@ class UserModelTestCase(BaseClientTestCase):
         self.assertTrue(admin_role is not None)
         self.assertTrue(super_admin_role is not None)
         self.assertTrue(user_role is not None)
+
+    def test_init_role_assign(self):
+        u = User(username=user_dict.get('username'), role_id=1)
+        db.session.add(u)
+        self.assertIsInstance(u.role, Role)
+        self.assertEqual(u.role.id, 1)
+        db.session.delete(u)
+
+        bad_id = Role.query.order_by(Role.id.desc()).first().id + 1
+        u = User(username=user_dict.get('username'), role_id=bad_id)
+        db.session.add(u)
+        self.assertIs(u.role, Role.query.filter_by(default=True).first())
+        self.assertNotEqual(u.role.id, bad_id)
