@@ -77,7 +77,12 @@ class User(db.Model):
         self.confirmed = confirmed
         self.active = active
 
-        self.role = role or  Role.query.filter(Role.default).first()
+        if isinstance(role, int):
+            self.role = Role.query.get(role)
+        elif isinstance(role, Role):
+            self.role = role
+        if not self.role:
+            self.role = Role.query.filter(Role.default).first()
 
         # AppGroup assignment
         default_app_group = AppGroup.query.filter(AppGroup.default).first()
@@ -97,26 +102,6 @@ class User(db.Model):
     ############################################
     # USER PROPERTY HANDLERS FOR RELATED MODELS
     ############################################
-    @property
-    def role(self):
-        """
-        Read property for user role
-        :return SQLAlchemy ORM Role object or None
-        """
-        return self.role
-
-    @role.setter
-    def role(self, role):
-        """
-        Setter for role attribute.  Accepts integer id of a valid Role
-        or a SQLAlchemy ORM Role object directly
-        """
-        if isinstance(role, int):
-            role = Role.query.get(role)
-        if not isinstance(role, Role):
-            raise ValueError('Could not set user.role using supplied value')
-        self.role = role
-
     @property
     def email(self):
         """
