@@ -5,16 +5,23 @@ from app.user.models.user import Role
 from app.user.models.app_permission import AppPermission
 from app.user.models.app_group import AppGroup
 
-# Common setup, teardown and utility methods to be re-used with each test module
-# Subclasses flask_testings TestCase, which is itself a subclass of unittest.TestCase
+
 class FlaskTestClient(TestCase):
-    """"""
+    """
+    A unittest.TestClient instance customized for testing unkani-server features
+    -- Renders templates by default unless otherwise specified
+    -- Create application with testing configuration
+    -- Pushes app context into current thread for access to current_app / g
+    -- Sets Up and Tears Down postgresql test database
+    -- Seeds AppGroup, AppPermission and Role records
+    -- Cleans up app context and database on teardown
+    """
     render_templates = True  # Default render templates to True
 
     def create_app(self):
         self.app = create_application('testing')
         self.app_context = self.app.app_context()
-        self.app_context.push()
+        self.app_context.push()  # Push app context into current thread
         return self.app
 
     def setUp(self):
@@ -27,4 +34,4 @@ class FlaskTestClient(TestCase):
     def tearDown(self):
         db.session.remove()
         db.drop_all()
-        self.app_context.pop()
+        self.app_context.pop()  # Remove / cleanup app context
