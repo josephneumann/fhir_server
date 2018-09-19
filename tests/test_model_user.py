@@ -10,6 +10,7 @@ user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",
                  last_name="DOE",
                  confirmed=True)
 
+
 def create_test_user(username=user_dict.get("username"),
                      email=user_dict.get("email"),
                      password=user_dict.get("password"),
@@ -26,20 +27,24 @@ def create_test_user(username=user_dict.get("username"),
 class UserModelTestCase(FlaskTestClient):
 
     def test_password_setter(self):
+        """Test password hash is populated"""
         u = User(password='cat')
         self.assertTrue(u.password_hash is not None)
 
     def test_password_verification(self):
+        """Test password hash verification with known password"""
         u = User(password='cat')
         self.assertTrue(u.verify_password('cat'))
         self.assertFalse(u.verify_password('dog'))
 
     def test_password_salts_are_random(self):
+        """Test password is stored as salted hash with userid as salt source"""
         u = User(password='cat')
         u2 = User(password='cat')
         self.assertTrue(u.password_hash != u2.password_hash)
 
     def test_last_password_is_saved(self):
+        """Test that old password is stored and can be verified on password change"""
         u = User(password='cat')
         self.assertTrue(u.verify_password('cat'))
         u.password = 'dog'
@@ -47,6 +52,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u.verify_last_password('cat'))
 
     def test_users_created_in_db(self):
+        """When we add a user, does it actually exist in the database?"""
         u = User()
         db.session.add(u)
         db.session.commit()
@@ -54,6 +60,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertEqual(len(userlist), 1)
 
     def test_valid_confirmation_token(self):
+        """Check that confirmation token processes in the User model"""
         u = User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -61,6 +68,10 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u.confirm(token))
 
     def test_invalid_confirmation_token(self):
+        """
+        Test an invalid confirmation token, confirm it cannot be used to confirm
+        the wrong user
+        """
         u1 = User(password='cat')
         u2 = User(password='dog')
         db.session.add(u1)
@@ -70,6 +81,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertFalse(u2.confirm(token))
 
     def test_expired_confirmation_token(self):
+        """Test expired confirmation token, confirm it cannot be used to confirm user"""
         u = User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -78,6 +90,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertFalse(u.confirm(token))
 
     def test_valid_reset_token(self):
+        """Test a valid password reset token is accepted"""
         u = User(password='cat')
         db.session.add(u)
         db.session.commit()
@@ -86,6 +99,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u.verify_password('dog'))  # Test new password is dog
 
     def test_invalid_reset_token(self):
+        """Test that an invalid password reset token is not accepted"""
         u1 = User(password='cat')
         u2 = User(password='dog')
         db.session.add(u1)
@@ -98,14 +112,15 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u2.verify_password('dog'))
 
     def test_load_user(self):
+        """Test userloader returns a user record"""
         u = User(username='testuser')
         db.session.add(u)
         db.session.commit()
-        u2 = load_user("1")
-        self.assertEqual(u.username, u2.username)
-        self.assertEqual(u.id, u2.id)
+        u2 = load_user(u.id)
+        self.assertIs(u, u2)
 
     def test_randomize_user(self):
+        """Test creation of random user records"""
         user = User()
         user.randomize_user()
         db.session.add(user)
@@ -120,6 +135,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertEqual(user.role.name, 'User')
 
     def test_initialize_roles_staticmethod(self):
+        """Confirm roles are initialized"""
         Role.initialize_roles()
         admin_role = Role.query.filter_by(name='Admin').first()
         super_admin_role = Role.query.filter_by(name='Super Admin').first()
@@ -128,15 +144,38 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(super_admin_role is not None)
         self.assertTrue(user_role is not None)
 
-    def test_init_role_assign(self):
-        u = User(username=user_dict.get('username'), role_id=1)
+    def test_init_role_assign_integer(self):
+        """
+        Test assigning role on User initialization
+        --Allow for integer role_id on init
+        """
+        u = User(username=user_dict.get('username'), role=1)
         db.session.add(u)
         self.assertIsInstance(u.role, Role)
-        self.assertEqual(u.role.id, 1)
+        self.assertEqual(u.role.id, 1, 'Role id integer not processed during User init')
         db.session.delete(u)
 
         bad_id = Role.query.order_by(Role.id.desc()).first().id + 1
-        u = User(username=user_dict.get('username'), role_id=bad_id)
+        u = User(username=user_dict.get('username'), role=bad_id)
         db.session.add(u)
-        self.assertIs(u.role, Role.query.filter_by(default=True).first())
-        self.assertNotEqual(u.role.id, bad_id)
+        self.assertIs(u.role, Role.query.filter_by(default=True).first(), 'Default role not assigned to User')
+        self.assertNotEqual(u.role.id, bad_id, 'Default role not assigned to User')
+
+    def test_init_role_assign_role_object(self):
+        """
+        Test assigning role on User initialization
+        --Allow for passing SQLAlchemy Role object on init
+        """
+        role = Role.query.filter_by(default=False).first()
+        u = User(username=user_dict.get('username'), role=role)
+        db.session.add(u)
+        self.assertIs(u.role, role, 'Could not assign Role object to User during init')
+
+    def test_init_role_assign_default(self):
+        """
+        Test assigning role on User initialization
+        --Confirm default Role is assigned
+        """
+        u = User(username=user_dict.get('username'), role=None)
+        db.session.add(u)
+        self.assertIs(u.role, Role.query.filter_by(default=True).first(), 'Default role not assigned')

@@ -66,7 +66,7 @@ class User(db.Model):
     row_hash = db.Column(db.Text, index=True)
 
     def __init__(self, username=None, first_name=None, last_name=None, dob=None, description=None,
-                 password=None, sex=None, role_id=None, app_group_id=None, confirmed=False, active=True, **kwargs):
+                 password=None, sex=None, role=None, app_group=None, confirmed=False, active=True, **kwargs):
         self.username = username
         self.password = password
         self.dob = dob
@@ -77,20 +77,25 @@ class User(db.Model):
         self.confirmed = confirmed
         self.active = active
 
-        if isinstance(role_id, int):
-            role = Role.query.get(role_id)
+        # Role assignment
+        if isinstance(role, int):
+            role = Role.query.get(role)
             if role:
                 self.role = role
-
-        if not self.role:
-            role = Role.query.filter_by(default=True).first()
+        elif isinstance(role, Role):
             self.role = role
+        default_role = Role.query.filter(Role.default).first()
+        if not self.role and default_role:
+            self.role = default_role
 
+        # AppGroup assignment
         default_app_group = AppGroup.query.filter(AppGroup.default).first()
-        if isinstance(app_group_id, int):
-            app_group = AppGroup.query.get(app_group_id)
+        if isinstance(app_group, int):
+            app_group = AppGroup.query.get(app_group)
             if app_group:
                 self.app_groups.append(app_group)
+        elif isinstance(app_group, AppGroup):
+            self.app_groups.append(app_group)
         if not self.app_groups and default_app_group:
             self.app_groups.append(default_app_group)
 
