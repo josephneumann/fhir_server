@@ -77,16 +77,7 @@ class User(db.Model):
         self.confirmed = confirmed
         self.active = active
 
-        # Role assignment
-        if isinstance(role, int):
-            role = Role.query.get(role)
-            if role:
-                self.role = role
-        elif isinstance(role, Role):
-            self.role = role
-        default_role = Role.query.filter(Role.default).first()
-        if not self.role and default_role:
-            self.role = default_role
+        self.role = role or  Role.query.filter(Role.default).first()
 
         # AppGroup assignment
         default_app_group = AppGroup.query.filter(AppGroup.default).first()
@@ -106,8 +97,27 @@ class User(db.Model):
     ############################################
     # USER PROPERTY HANDLERS FOR RELATED MODELS
     ############################################
+    @property
+    def role(self):
+        """
+        Read property for user role
+        :return SQLAlchemy ORM Role object or None
+        """
+        return self.role
 
-    @hybrid_property
+    @role.setter
+    def role(self, role):
+        """
+        Setter for role attribute.  Accepts integer id of a valid Role
+        or a SQLAlchemy ORM Role object directly
+        """
+        if isinstance(role, int):
+            role = Role.query.get(role)
+        if not isinstance(role, Role):
+            raise ValueError('Could not set user.role using supplied value')
+        self.role = role
+
+    @property
     def email(self):
         """
         Returns the primary email for the account.
