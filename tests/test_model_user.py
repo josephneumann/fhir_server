@@ -1,9 +1,11 @@
 import time
+from flask import url_for
 from tests.base_test_client import FlaskTestClient
 from app.user.models.user import User, Role, load_user
 from app.user.models.app_group import AppGroup
 from app.fhir.models.email_address import EmailAddress
 from app.fhir.models.phone_number import PhoneNumber
+from app.fhir.models.address import Address
 from app.auth.security import app_group_dict
 from app.extensions import db
 
@@ -250,3 +252,26 @@ class UserModelTestCase(FlaskTestClient):
         self.assertIsInstance(u.phone_number, PhoneNumber)
         self.assertEqual(u.phone_number.number, user_dict.get('phone_number'))
         self.assertEqual(u.phone_number.type, 'MOBILE')
+
+    def test_address_assign(self):
+        """Test assigning an address to a user.  Test the property that fetches active and primary address"""
+        u = create_test_user()
+        a = Address(address1='123 Main Street', city='Anytown', state='WI', primary=True, active=True)
+        u.addresses.append(a)
+        db.session.add(u)
+        db.session.commit()
+        self.assertIsInstance(u.addresses[0], Address)
+        self.assertIsInstance(u.address, Address)
+        self.assertIs(u.address, a)
+        a.primary = False  # Now the address property should return None
+        db.session.add(a)
+        db.session.commit()
+        self.assertIsNone(u.address, Address)
+
+    def test_user_resource_url(self):
+        """Test that user resource API url is constructed appropriately for User model"""
+        u = create_test_user()
+        db.session.add(u)
+        db.session.commit()
+        self.assertIsNotNone(u.get_url())
+        self.assertEqual(u.get_url(), url_for('user.get_user', userid=u.id, _external=True))

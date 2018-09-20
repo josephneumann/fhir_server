@@ -1,6 +1,5 @@
 import os, hashlib, json, base64
 from flask import current_app, g, url_for
-from sqlalchemy.ext.hybrid import hybrid_property
 from marshmallow import fields, ValidationError
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -123,7 +122,7 @@ class User(db.Model):
         return self.email_addresses.filter(EmailAddress.primary).filter(EmailAddress.active).first()
 
     @email.setter
-    def email(self, email=None):
+    def email(self, email=None):  # pragma: no cover
         """Email is read only - must be set by appending ORM to relation email_addresses"""
         raise AttributeError('This property is read-only.')
 
@@ -137,7 +136,7 @@ class User(db.Model):
         return self.phone_numbers.filter(PhoneNumber.primary).filter(PhoneNumber.active).first()
 
     @phone_number.setter
-    def phone_number(self, phone=None):
+    def phone_number(self, phone=None):  # pragma: no cover
         """Phone Number is ready only"""
         raise AttributeError('This property is read-only.')
 
@@ -151,7 +150,7 @@ class User(db.Model):
         return self.addresses.filter(Address.primary).filter(Address.active).first()
 
     @address.setter
-    def address(self, address=None):
+    def address(self, address=None):  # pragma: no cover
         """Address is read only"""
         raise AttributeError('This property is read-only.')
 
