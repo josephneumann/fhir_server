@@ -2,14 +2,17 @@ import time
 from tests.base_test_client import FlaskTestClient
 from app.user.models.user import User, Role, load_user
 from app.user.models.app_group import AppGroup
+from app.fhir.models.email_address import EmailAddress
+from app.fhir.models.phone_number import PhoneNumber
 from app.auth.security import app_group_dict
 from app.extensions import db
 
-user_dict = dict(email="JOHN.DOE@EXAMPLE.COM",
-                 username="JOHN.DOE",
+user_dict = dict(email="john.doe@example.com",
+                 username="john.doe",
                  password="testpw",
-                 first_name="JOHN",
-                 last_name="DOE",
+                 first_name="john",
+                 last_name="doe",
+                 phone_number='123456789',
                  confirmed=True)
 
 
@@ -19,11 +22,10 @@ def create_test_user(username=user_dict.get("username"),
                      confirmed=user_dict.get("confirmed"),
                      first_name=user_dict.get("first_name"),
                      last_name=user_dict.get("last_name"),
+                     phone_number=user_dict.get("phone_number")
                      ):
-    u = User(username=username, password=password, confirmed=confirmed, first_name=first_name,
-             last_name=last_name)
-    db.session.add(u)
-    return u
+    return User(username=username, password=password, confirmed=confirmed, first_name=first_name,
+                last_name=last_name, email=email, phone_number=phone_number)
 
 
 class UserModelTestCase(FlaskTestClient):
@@ -192,7 +194,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertIsNotNone(ag_names, 'ApGroups not initialized')
         expected_names = {x for x in app_group_dict}
         self.assertEqual(ag_names, expected_names, 'AppGroups created do not match expected')
-        
+
     def test_init_appgroup_assign_integer(self):
         """
         Test assigning app_groups on User initialization
@@ -207,7 +209,8 @@ class UserModelTestCase(FlaskTestClient):
         bad_id = AppGroup.query.order_by(AppGroup.id.desc()).first().id + 1
         u = User(username=user_dict.get('username'), app_group=bad_id)
         db.session.add(u)
-        self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(), 'Default app-group not assigned to User')
+        self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(),
+                      'Default app-group not assigned to User')
         self.assertNotEqual(u.app_groups[0].id, bad_id, 'Default app-group not assigned to User')
 
     def test_init_appgroup_assign_object(self):
@@ -228,3 +231,22 @@ class UserModelTestCase(FlaskTestClient):
         u = User(username=user_dict.get('username'), app_group=None)
         db.session.add(u)
         self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(), 'Default appgroup not assigned')
+
+    def test_init_email_assign(self):
+        """Test email property and email assignment on initialization of object"""
+        u = create_test_user()
+        db.session.add(u)
+        db.session.commit()
+        self.assertIsInstance(u.email_addresses[0], EmailAddress)
+        self.assertIsInstance(u.email, EmailAddress)
+        self.assertEqual(user_dict.get('email'), u.email.email)
+
+    def test_init_phone_number_assign(self):
+        """Test phone_number property and phone_number assignment on initialization of object"""
+        u = create_test_user()
+        db.session.add(u)
+        db.session.commit()
+        self.assertIsInstance(u.phone_numbers[0], PhoneNumber)
+        self.assertIsInstance(u.phone_number, PhoneNumber)
+        self.assertEqual(u.phone_number.number, user_dict.get('phone_number'))
+        self.assertEqual(u.phone_number.type, 'MOBILE')

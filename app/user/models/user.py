@@ -66,7 +66,8 @@ class User(db.Model):
     row_hash = db.Column(db.Text, index=True)
 
     def __init__(self, username=None, first_name=None, last_name=None, dob=None, description=None,
-                 password=None, sex=None, role=None, app_group=None, confirmed=False, active=True, **kwargs):
+                 password=None, sex=None, email=None, role=None, app_group=None, phone_number=None,
+                 confirmed=False, active=True):
         self.username = username
         self.password = password
         self.dob = dob
@@ -77,6 +78,7 @@ class User(db.Model):
         self.confirmed = confirmed
         self.active = active
 
+        # Role assignment
         if isinstance(role, int):
             self.role = Role.query.get(role)
         elif isinstance(role, Role):
@@ -85,15 +87,23 @@ class User(db.Model):
             self.role = Role.query.filter(Role.default).first()
 
         # AppGroup assignment
-        default_app_group = AppGroup.query.filter(AppGroup.default).first()
         if isinstance(app_group, int):
             app_group = AppGroup.query.get(app_group)
             if app_group:
                 self.app_groups.append(app_group)
         elif isinstance(app_group, AppGroup):
             self.app_groups.append(app_group)
+        default_app_group = AppGroup.query.filter(AppGroup.default).first()
         if not self.app_groups and default_app_group:
             self.app_groups.append(default_app_group)
+
+        # Email assignment
+        if email:
+            self.email_addresses.append(EmailAddress(email=email.lower(), primary=True, active=True))
+
+        # Phone Number assignment
+        if phone_number:
+            self.phone_numbers.append(PhoneNumber(number=phone_number, type='MOBILE', active=True, primary=True))
 
     def __repr__(self):  # pragma: no cover
         """Represents User model instance as a string"""
@@ -105,16 +115,16 @@ class User(db.Model):
     @property
     def email(self):
         """
-        Returns the primary email for the account.
+        Returns the primary and active email for the account.
         Users may only have one Active and Primary email per account
         All other emails (old emails) must be inactive and non primary
         :return SQLAlchemy EmailAddress object or None
         """
-        return self.email_addresses.filter(EmailAddress.primary == True).filter(EmailAddress.active == True).first()
+        return self.email_addresses.filter(EmailAddress.primary).filter(EmailAddress.active).first()
 
     @email.setter
     def email(self, email=None):
-        """Email is read only"""
+        """Email is read only - must be set by appending ORM to relation email_addresses"""
         raise AttributeError('This property is read-only.')
 
     @property
@@ -124,7 +134,7 @@ class User(db.Model):
         Users may only have one Active and Primary phone number per account
         All other phone numbers (old) must be inactive and non primary
         """
-        return self.phone_numbers.filter(PhoneNumber.primary).filter(PhoneNumber.active == True).first()
+        return self.phone_numbers.filter(PhoneNumber.primary).filter(PhoneNumber.active).first()
 
     @phone_number.setter
     def phone_number(self, phone=None):

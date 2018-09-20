@@ -37,6 +37,10 @@ class EmailAddress(db.Model):
         self.active = active
         self._fhir = None
 
+    def __repr__(self):  # pragma: no cover
+        """Represents EmailAddress model instance as a string"""
+        return '<User {}:{}>'.format(self.id, self.email)
+
     def generate_avatar_hash(self):
         __doc__ = """
         Generate an MD5 hash of the user's email.  Stores the result in the user
