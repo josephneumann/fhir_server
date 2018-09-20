@@ -7,7 +7,7 @@ from sqlalchemy import or_, and_, any_
 from sqlalchemy.orm import configure_mappers
 
 from config import config
-from app.extensions import db, ma, principal, migrate
+from app.extensions import db, ma, principal, migrate, bcrypt
 from app import auth, errors, fhir, main, user, commands
 from app.fhir import models as fhirmodels
 from app.user import models as usermodels
@@ -38,6 +38,7 @@ def register_extensions(app):
     ma.init_app(app)
     if not app.config['SSL_DISABLE']:  # pragma: no cover
         sslify = SSLify(app)
+    bcrypt.init_app(app)
     return None
 
 

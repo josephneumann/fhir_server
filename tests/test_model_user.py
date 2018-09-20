@@ -18,19 +18,17 @@ user_dict = dict(email="john.doe@example.com",
                  confirmed=True)
 
 
-def create_test_user(username=user_dict.get("username"),
-                     email=user_dict.get("email"),
-                     password=user_dict.get("password"),
-                     confirmed=user_dict.get("confirmed"),
-                     first_name=user_dict.get("first_name"),
-                     last_name=user_dict.get("last_name"),
-                     phone_number=user_dict.get("phone_number")
-                     ):
+def create_test_user(username=user_dict.get("username"), email=user_dict.get("email"),
+                     password=user_dict.get("password"), confirmed=user_dict.get("confirmed"),
+                     first_name=user_dict.get("first_name"), last_name=user_dict.get("last_name"),
+                     phone_number=user_dict.get("phone_number")):
+    """Quickly create a test user for use in unittests"""
     return User(username=username, password=password, confirmed=confirmed, first_name=first_name,
                 last_name=last_name, email=email, phone_number=phone_number)
 
 
-class UserModelTestCase(FlaskTestClient):
+class UserModelSecurityTestCase(FlaskTestClient):
+    """Unittests related to user authentication and security"""
 
     def test_password_setter(self):
         """Test password hash is populated"""
@@ -57,14 +55,6 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u.verify_password('dog'))
         self.assertTrue(u.verify_last_password('cat'))
 
-    def test_users_created_in_db(self):
-        """When we add a user, does it actually exist in the database?"""
-        u = User()
-        db.session.add(u)
-        db.session.commit()
-        userlist = User.query.all()
-        self.assertEqual(len(userlist), 1)
-
     def test_valid_confirmation_token(self):
         """Check that confirmation token processes in the User model"""
         u = User(password='cat')
@@ -74,9 +64,7 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(u.confirm(token))
 
     def test_invalid_confirmation_token(self):
-        """
-        Test an invalid confirmation token, confirm it cannot be used to confirm
-        the wrong user
+        """Test an invalid confirmation token, confirm it cannot be used to confirm the wrong user
         """
         u1 = User(password='cat')
         u2 = User(password='dog')
@@ -117,6 +105,18 @@ class UserModelTestCase(FlaskTestClient):
         self.assertFalse(u2.reset_password(none_token, 'horse'))
         self.assertTrue(u2.verify_password('dog'))
 
+
+class UserModelLoadCreateTestCase(FlaskTestClient):
+    """Unittests related to loading and creating User records"""
+
+    def test_users_created_in_db(self):
+        """When we add a user, does it actually exist in the database?"""
+        u = User()
+        db.session.add(u)
+        db.session.commit()
+        userlist = User.query.all()
+        self.assertEqual(len(userlist), 1)
+
     def test_load_user(self):
         """Test userloader returns a user record"""
         u = User(username='testuser')
@@ -124,6 +124,10 @@ class UserModelTestCase(FlaskTestClient):
         db.session.commit()
         u2 = load_user(u.id)
         self.assertIs(u, u2)
+
+
+class UserModelRandomizationTestCase(FlaskTestClient):
+    """Unittests related to randomization of user records"""
 
     def test_randomize_user(self):
         """Test creation of random user records"""
@@ -139,6 +143,10 @@ class UserModelTestCase(FlaskTestClient):
         self.assertTrue(user.active)
         self.assertFalse(user.confirmed)
         self.assertEqual(user.role.name, 'User')
+
+
+class UserRoleTestCase(FlaskTestClient):
+    """Unittests related to creating and assigning Roles to Users"""
 
     def test_initialize_roles_staticmethod(self):
         """Confirm roles are initialized"""
@@ -168,29 +176,24 @@ class UserModelTestCase(FlaskTestClient):
         self.assertNotEqual(u.role.id, bad_id, 'Default role not assigned to User')
 
     def test_init_role_assign_role_object(self):
-        """
-        Test assigning role on User initialization
-        --Allow for passing SQLAlchemy Role object on init
-        """
+        """Test assigning role on User initialization"""
         role = Role.query.filter_by(default=False).first()
         u = User(username=user_dict.get('username'), role=role)
         db.session.add(u)
         self.assertIs(u.role, role, 'Could not assign Role object to User during init')
 
     def test_init_role_assign_default(self):
-        """
-        Test assigning role on User initialization
-        --Confirm default Role is assigned
-        """
+        """Test assigning role on User initialization -Confirm default Role is assigned"""
         u = User(username=user_dict.get('username'), role=None)
         db.session.add(u)
         self.assertIs(u.role, Role.query.filter_by(default=True).first(), 'Default role not assigned')
 
+
+class UserAppGroupTestCase(FlaskTestClient):
+    """Unittests related to creating and assigning AppGroups for Users"""
+
     def test_initialize_app_groups_staticmethod(self):
-        """
-        Test AppGroup.initialize_app_groups() to ensure app_group records
-        are created as expected
-        """
+        """Test AppGroup.initialize_app_groups() to ensure app_group records are created as expected"""
         # Note: AppGroup initialization completed in SetUp
         ag_names = {x.name for x in AppGroup.query.all()}
         self.assertIsNotNone(ag_names, 'ApGroups not initialized')
@@ -198,16 +201,15 @@ class UserModelTestCase(FlaskTestClient):
         self.assertEqual(ag_names, expected_names, 'AppGroups created do not match expected')
 
     def test_init_appgroup_assign_integer(self):
-        """
-        Test assigning app_groups on User initialization
-        --Allow for integer app_group.id on init
-        """
+        """Test assigning app_groups on User initialization"""
         u = User(username=user_dict.get('username'), app_group=1)
         db.session.add(u)
         self.assertIsInstance(u.app_groups[0], AppGroup)
         self.assertEqual(u.app_groups[0].id, 1, 'AppGroup id integer not processed during User init')
         db.session.delete(u)
 
+    def test_init_appgroup_assign_bad_integer(self):
+        """Test assigning app_group with bad integer id on User initialization"""
         bad_id = AppGroup.query.order_by(AppGroup.id.desc()).first().id + 1
         u = User(username=user_dict.get('username'), app_group=bad_id)
         db.session.add(u)
@@ -233,6 +235,10 @@ class UserModelTestCase(FlaskTestClient):
         u = User(username=user_dict.get('username'), app_group=None)
         db.session.add(u)
         self.assertIs(u.app_groups[0], AppGroup.query.filter_by(default=True).first(), 'Default appgroup not assigned')
+
+
+class UserModelDemographicTestCase(FlaskTestClient):
+    """Unittests related to setting and reading user demographic attributes"""
 
     def test_init_email_assign(self):
         """Test email property and email assignment on initialization of object"""

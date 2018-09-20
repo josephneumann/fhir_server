@@ -2,7 +2,7 @@ import os, hashlib, json, base64
 from flask import current_app, g, url_for
 from marshmallow import fields, ValidationError
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_bcrypt import generate_password_hash, check_password_hash
 
 from app.extensions import db, ma
 from app.main.utils.flask_sendgrid import send_email
@@ -184,7 +184,7 @@ class User(db.Model):
         is archived in the 'last_password_hash' attribute.
         """
         if password:
-            pw_hash = unkani_password_hasher(password=password)
+            pw_hash = generate_password_hash(password).decode('utf-8')
             if self.password_hash:
                 if pw_hash != self.password_hash:
                     self.last_password_hash = self.password_hash
@@ -871,19 +871,6 @@ class UserVersionSchema(ma.Schema):
 ##################################################################################################
 # USER-RELATED UTILITY FUNCTIONS
 ##################################################################################################
-
-def unkani_password_hasher(password):
-    """
-    A helper function to be called to hash all Unkani passwords.  Employs pbkdf2:sha1 hashing with a
-    salt length of 9 by default.
-    :param password:
-        Type: Str
-        Contents: The password to be hashed
-    :return:
-        Returns sha1 hash of password string
-    """
-    return generate_password_hash(password, method='pbkdf2:sha1', salt_length=8)
-
 
 def lookup_user_by_email(email):
     """
