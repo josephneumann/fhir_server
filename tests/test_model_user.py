@@ -105,6 +105,15 @@ class UserModelSecurityTestCase(FlaskTestClient):
         self.assertFalse(u2.reset_password(none_token, 'horse'))
         self.assertTrue(u2.verify_password('dog'))
 
+    def test_user_pw_unreadable(self):
+        """Test that pw is stored as hash and password attribute is not readable"""
+        u = User(username='john.doe', password='testpw')
+        db.session.add(u)
+        db.session.commit()
+        with self.assertRaises(AttributeError):
+            pw = u.password
+        self.assertNotEqual('testpw', u.password_hash)
+
 
 class UserModelLoadCreateTestCase(FlaskTestClient):
     """Unittests related to loading and creating User records"""

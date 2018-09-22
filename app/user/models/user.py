@@ -180,8 +180,12 @@ class User(db.Model):
     def password(self, password):
         """
         Defines setter method for property 'password'.  The string passed as the password
-        parameter is converted to salted hash and stored in database.  The former password hash
+        parameter is converted to password hash and stored in database.  The former password hash
         is archived in the 'last_password_hash' attribute.
+
+        Unkani uses the bcrypt password hashing function, based on the blowfish block cipher to generate
+        a cryptographic hash.  The hash is salted, adding additional entropy to the function.  Bcrypt is
+        an expensive key setup function which is resistant to brute-force and rainbow table attacks.
         """
         if password:
             pw_hash = generate_password_hash(password).decode('utf-8')
