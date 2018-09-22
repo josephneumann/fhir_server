@@ -20,6 +20,9 @@ from app.main.utils.pagination import paginate_query, filter_ops, register_arg_e
 from app.main.utils.etag import etag
 
 
+# TODO: Add email confirmation route and handling
+# TODO: Add password change confirmation route and handling
+
 @bp_user.route('/User', methods=['GET'])
 @token_auth.login_required
 @app_permission_userprofileupdate.require(http_exception=403)
@@ -29,9 +32,7 @@ def get_users():
     # TODO: Fix error that arises when passing filter=version_number,eq,1
 
     # Set variables for query to execute
-    app_group_ids = []
-    for i in g.current_user.app_groups:
-        app_group_ids.append(i.id)
+    app_group_ids = [x.id for x in g.current_user.app_groups]
     level = g.current_user.role.level
     id = g.current_user.id
 
@@ -43,10 +44,10 @@ def get_users():
         .join(Role) \
         .filter(or_(Role.level < level, User.id == id)) \
         .join(EmailAddress) \
-        .filter(and_(EmailAddress.primary == True, EmailAddress.active == True)) \
-        .filter(db.session.query(ua) \
-                .join(AppGroup, ua.app_groups) \
-                .filter(AppGroup.id.in_(app_group_ids)) \
+        .filter(and_(EmailAddress.primary, EmailAddress.active)) \
+        .filter(db.session.query(ua)
+                .join(AppGroup, ua.app_groups)
+                .filter(AppGroup.id.in_(app_group_ids))
                 .filter(User.id == ua.id).distinct().exists()
                 )
 

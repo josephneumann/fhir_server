@@ -35,6 +35,15 @@ class UserModelSecurityTestCase(FlaskTestClient):
         u = User(password='cat')
         self.assertTrue(u.password_hash is not None)
 
+    def test_user_pw_unreadable(self):
+        """Test that pw is stored as hash and password attribute is not readable"""
+        u = User(username='john.doe', password='testpw')
+        db.session.add(u)
+        db.session.commit()
+        with self.assertRaises(AttributeError):
+            pw = u.password
+        self.assertNotEqual('testpw', u.password_hash)
+
     def test_password_verification(self):
         """Test password hash verification with known password"""
         u = User(password='cat')
@@ -61,7 +70,8 @@ class UserModelSecurityTestCase(FlaskTestClient):
         db.session.add(u)
         db.session.commit()
         token = u.generate_confirmation_token()
-        self.assertTrue(u.confirm(token))
+        success, _ = u.confirm(token)
+        self.assertTrue(success)
 
     def test_invalid_confirmation_token(self):
         """Test an invalid confirmation token, confirm it cannot be used to confirm the wrong user"""
@@ -71,7 +81,8 @@ class UserModelSecurityTestCase(FlaskTestClient):
         db.session.add(u2)
         db.session.commit()
         token = u1.generate_confirmation_token()
-        self.assertFalse(u2.confirm(token))
+        success, _ = u2.confirm(token)
+        self.assertFalse(success)
 
     def test_expired_confirmation_token(self):
         """Test expired confirmation token, confirm it cannot be used to confirm user"""
@@ -80,16 +91,28 @@ class UserModelSecurityTestCase(FlaskTestClient):
         db.session.commit()
         token = u.generate_confirmation_token(1)
         time.sleep(2)
-        self.assertFalse(u.confirm(token))
+        success, _ = u.confirm(token)
+        self.assertFalse(success)
 
     def test_valid_reset_token(self):
         """Test a valid password reset token is accepted"""
         u = User(password='cat')
         db.session.add(u)
         db.session.commit()
-        token = u.generate_reset_token()
-        self.assertTrue(u.reset_password(token, 'dog'))  # Test token value matches userid
+        token = u.generate_reset_password_token()
+        success, _ = u.reset_password(token, 'dog')
+        self.assertTrue(success)  # Test token value matches userid
         self.assertTrue(u.verify_password('dog'))  # Test new password is dog
+
+    def test_expired_reset_token(self):
+        """Test expired password reset token not accepted"""
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_password_token(expiration=1)
+        time.sleep(2)
+        success, _ = u.reset_password(token, 'dog')
+        self.assertFalse(success)  # Test token value matches userid
 
     def test_invalid_reset_token(self):
         """Test that an invalid password reset token is not accepted"""
@@ -98,20 +121,10 @@ class UserModelSecurityTestCase(FlaskTestClient):
         db.session.add(u1)
         db.session.add(u2)
         db.session.commit()
-        token = u1.generate_reset_token()
-        none_token = None
-        self.assertFalse(u2.reset_password(token, 'horse'))
-        self.assertFalse(u2.reset_password(none_token, 'horse'))
+        token = u1.generate_reset_password_token()
+        success, _ = u2.reset_password(token, 'horse')
+        self.assertFalse(success)
         self.assertTrue(u2.verify_password('dog'))
-
-    def test_user_pw_unreadable(self):
-        """Test that pw is stored as hash and password attribute is not readable"""
-        u = User(username='john.doe', password='testpw')
-        db.session.add(u)
-        db.session.commit()
-        with self.assertRaises(AttributeError):
-            pw = u.password
-        self.assertNotEqual('testpw', u.password_hash)
 
 
 class UserModelLoadCreateTestCase(FlaskTestClient):

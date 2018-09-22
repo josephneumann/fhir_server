@@ -2,6 +2,7 @@ import os, hashlib, json, base64
 from flask import current_app, g, url_for
 from marshmallow import fields, ValidationError
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
+from itsdangerous import BadData, SignatureExpired
 from flask_bcrypt import generate_password_hash, check_password_hash
 
 from app.extensions import db, ma
@@ -214,6 +215,10 @@ class User(db.Model):
         else:
             return False
 
+    ####################################
+    # CONFIRMATION TOKEN SUPPORT
+    ####################################
+
     def generate_confirmation_token(self, expiration=3600):
         """
         Generates a Timed JSON Web Signature encoding the user's id using the application
@@ -226,20 +231,25 @@ class User(db.Model):
         """
         Loads Timed JSON web signature. Decodes using application Secret Key.  If user
         that is encrypted in the token is un-confirmed, sets user.confirmed boolean to True
+
+        :return
+            Tuple in format (success, message)
+            Success is a boolean indicating whether operation was successfull
+            Message is a text description of the outcome
         """
         # TODO: Move confirmation boolean and process to email_address record instead of user
         s = TimedSerializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
-        except:
-            return False
+        except BadData:
+            return False, 'Invalid token provided for user confirmation'
         if data.get('confirm') != self.id:
-            return False
+            return False, 'Userid embedded in token does not match the target user'
         self.confirmed = True
         db.session.add(self)
-        return True
+        return True, 'User confirmed'
 
-    def generate_reset_token(self, expiration=3600):
+    def generate_reset_password_token(self, expiration=3600):
         """
         Generates a Timed JSON Web Signature encoding the user's id using the application
         SECRET KEY.  Also encodes a key-value pair for account password reset.
@@ -252,80 +262,22 @@ class User(db.Model):
         Decode and validate a Time JSON Web Signature supplied as the 'Token' variable. Ensure
         that the id encoded in the token matches the expected user.  Update the user password attribute
         with the password supplied in the parameter 'new_password'.
+
+        :return
+            Tuple in format (success, message)
+            Success is a boolean indicating whether operation was successfull
+            Message is a text description of the outcome
         """
         s = TimedSerializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
-        except:
-            return False
+        except BadData:
+            return False, 'Invalid token'
         if data.get('reset') != self.id:
-            return False
+            return False, 'Userid embedded in token does not match the target user'
         self.password = new_password
         db.session.add(self)
-        return True
-
-    def generate_email_change_token(self, new_email, expiration=3600):
-        """
-        Generates a Timed JSON Web Signature encoding the user's id using the application
-        SECRET KEY.  Also encodes a key-value pair for email change and validation.
-        """
-        s = TimedSerializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'change_email': self.id, 'new_email': new_email})
-
-    def process_change_email_token(self, token):
-        """
-        Decode and validate a Time JSON Web Signature supplied as the 'Token' variable. Ensure
-        that the id encoded in the token matches the expected user.  Check for a 'change_password'
-        key in the token with a value matching the current user id.  If match exists for specified
-        user, update the user email with the email supplied in the token as 'new_email'.
-        """
-        s = TimedSerializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            raise ValueError("Invalid token provided.")
-        if data.get('change_email') != self.id:
-            raise ValueError("Token provided did not match the logged in user's identity.")
-        new_email = data.get('new_email', None)
-        if not new_email:
-            raise ValueError("An email address was not included in the change email request token.")
-        matching_email = db.session.query(EmailAddress).filter(EmailAddress.user_id == self.id).filter(
-            EmailAddress.email == new_email).first()
-        if matching_email:
-            self.email = matching_email
-            db.session.add(self)
-        else:
-            raise ValueError("A matching email for the logged-in user could not be found.")
-
-    def verify_email(self, email):
-        """
-        Helper method to compare a supplied email with the user's email.  Returns True
-        if email matches, False if not.
-        """
-        if isinstance(email, str):
-            email = str(email).upper().strip()
-            if self.email.email == email:
-                return True
-            else:
-                return False
-        if isinstance(email, EmailAddress):
-            if self.email.email == email.email:
-                return True
-            else:
-                return False
-
-    def verify_previous_email(self, email):
-        """
-        Helper method to compare a supplied email with the user's previous email.  Returns True
-        if email matches, False if not.
-        """
-        email = str(email).strip().upper()
-        previous_email = db.session.query(EmailAddress).join(User).filter(EmailAddress.user == self).filter(
-            EmailAddress.primary == False).order_by(EmailAddress.updated_at.desc()).first()
-        if previous_email and previous_email.email == email:
-            return True
-        else:
-            return False
+        return True, 'Password successfully reset'
 
     #####################################
     # USER PERMISSION LEVEL COMPARISON
@@ -525,6 +477,36 @@ class User(db.Model):
             return self.dob.strftime('%Y-%m-%d')
         else:
             return None
+
+    def verify_email(self, email):
+        """
+        Helper method to compare a supplied email with the user's email.  Returns True
+        if email matches, False if not.
+        """
+        if isinstance(email, str):
+            email = str(email).upper().strip()
+            if self.email.email == email:
+                return True
+            else:
+                return False
+        if isinstance(email, EmailAddress):
+            if self.email.email == email.email:
+                return True
+            else:
+                return False
+
+    def verify_previous_email(self, email):
+        """
+        Helper method to compare a supplied email with the user's previous email.  Returns True
+        if email matches, False if not.
+        """
+        email = str(email).strip().upper()
+        previous_email = db.session.query(EmailAddress).join(User).filter(EmailAddress.user == self).filter(
+            EmailAddress.primary == False).order_by(EmailAddress.updated_at.desc()).first()
+        if previous_email and previous_email.email == email:
+            return True
+        else:
+            return False
 
     ##############################################################################################
     # USER API SUPPORT
@@ -1675,7 +1657,7 @@ class UserAPI:
                     if self.user and not self.confirmed:
                         self.errors['warning']['account_confirmation'] = 'Email address has been changed.  The' \
                                                                          ' account requires confirmation.'
-                        token = u.generate_email_change_token(self.email.email.lower())
+                        token = u.generate_change_email_token(self.email.email.lower())
                         send_email(subject='Unkani - Email Change', to=[self.email.email.lower()],
                                    template='auth/email/change_email',
                                    token=token, user=self.user)
