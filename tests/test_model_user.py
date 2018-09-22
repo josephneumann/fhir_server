@@ -64,8 +64,7 @@ class UserModelSecurityTestCase(FlaskTestClient):
         self.assertTrue(u.confirm(token))
 
     def test_invalid_confirmation_token(self):
-        """Test an invalid confirmation token, confirm it cannot be used to confirm the wrong user
-        """
+        """Test an invalid confirmation token, confirm it cannot be used to confirm the wrong user"""
         u1 = User(password='cat')
         u2 = User(password='dog')
         db.session.add(u1)

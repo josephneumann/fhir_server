@@ -331,7 +331,7 @@ class User(db.Model):
     # USER PERMISSION LEVEL COMPARISON
     #####################################
     def has_higher_permission(self, user):
-        __doc__ = """
+        """
         User Method:  Helper method that accepts either the userid integer
         of another user, or the user object of another user.
         The method looks up compares the permission level of the other user's role with
@@ -502,7 +502,6 @@ class User(db.Model):
     #####################################
     # MISC UTILITY PROPERTIES AND METHODS
     #####################################
-
     @property
     def joined_year(self):
         """Represents the year the user record was created with format 'YYYY'"""
@@ -676,7 +675,6 @@ class User(db.Model):
     ##############################################################################################
     # USER SERIALIZATION METHOD
     ##############################################################################################
-
     def dump(self):
         """
         Uses Marshmallows marshaller to dump the default serialized version of the user
